@@ -1,0 +1,1 @@
+package femtodb.core.accessor.parameter;public class StringUpdateParameter implements IColumnUpdateParameter{    private String parameter = null;    public StringUpdateParameter(String parameter) {        this.parameter = parameter;    }    public String toString() {        return this.parameter;    }}

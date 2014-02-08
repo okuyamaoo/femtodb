@@ -1,0 +1,1 @@
+package femtodb.core.table;import java.util.*;public interface TableIterator {    public boolean hasNext();    public Map.Entry next();    public void nextEntry();    public Object getEntryKey();    public Object getEntryValue();}
