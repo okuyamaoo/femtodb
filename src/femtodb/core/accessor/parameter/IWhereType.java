@@ -1,0 +1,1 @@
+package femtodb.core.accessor.parameter;import femtodb.core.table.data.*;public interface IWhereType {    public static int WHERE_TYPE_EQUAL = 1;    public int type();    public boolean execute(TableDataTransfer tableDataTransfer);}

@@ -1,0 +1,1 @@
+package femtodb.core.accessor.parameter;public interface IWhereParameter {}
