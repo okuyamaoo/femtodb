@@ -11,13 +11,17 @@
 	<path id="project.class.path">
 		<pathelement path = "."/>
 		<pathelement path = "classes"/>
-	</path>
+		<pathelement path = "lib/jetty-util-9.1.1.v20140108.jar"/>
+		<pathelement path = "lib/jetty-servlet-9.1.1.v20140108.jar"/>
+		<pathelement path = "lib/servlet-api-2.5.jar"/>
+		<pathelement path = "lib/jetty-server-9.1.1.v20140108.jar"/>
+ 		<pathelement path = "lib/servlet-api-3.1.jar"/>
+     </path>
 
 
 	<!-- clean Task  -->
 	<target name="clean">
 		<delete dir="${build.dir}"/>
-		<delete dir="okuyama.jar" />
 	</target>
 
 	<!-- setup Task  -->
@@ -37,7 +41,7 @@
 	<target name="jar" depends="compile">
 		<jar compress="yes" jarfile="okuyama-${version}.jar" basedir="${build.dir}" includes="**/*.class" />
 		<copy todir="${install.dir}/bin">
-			<fileset dir="./" includes="testdb*.jar" />
+			<fileset dir="./" includes="femtodb*.jar" />
 		</copy>
 	</target>
 
