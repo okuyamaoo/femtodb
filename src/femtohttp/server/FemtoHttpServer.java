@@ -15,7 +15,8 @@ public class FemtoHttpServer {
     
     public static void main(String[] args) {
         try {
-           
+           FemtoHttpServer femtoHttpServer = new FemtoHttpServer();
+           femtoHttpServer.startServer(args);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -29,7 +30,7 @@ public class FemtoHttpServer {
 
         ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
-        //handler.addServletWithMapping(femtohttp.server.FemtoDBConnector.class, "/femtoserver");
+        handler.addServletWithMapping(femtohttp.server.FemtoDBConnector.class, "/femtoserver");
 
         ServerConnector http = new ServerConnector(server);
         http.setPort(8080);
