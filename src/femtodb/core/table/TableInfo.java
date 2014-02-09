@@ -11,8 +11,25 @@ public class TableInfo {
     public String tableName = null;
     public Map<String, IColumnType> infomationMap = new LinkedHashMap<String, IColumnType>();
 
+
     public TableInfo(String tableName) {
         this.tableName = tableName;
+    }
+
+    public TableInfo(String[] logString) {
+        this.tableName = logString[0];
+        try {
+            if (logString.length > 1) {
+                for (int i = 0; i < logString.length; i=i+2) {
+
+                    if (logString[i+1].equals("Number type")) {
+                        infomationMap.put(logString[i], new ColumnTypeNumber());
+                    } else if (logString[i+1].equals("Varchar type")) {
+                        infomationMap.put(logString[i], new ColumnTypeVarchar());
+                    }
+                }
+            }
+        } catch (Exception e) {}
     }
 
 
@@ -37,6 +54,21 @@ public class TableInfo {
             idx++;
         }
         return keyList;
+    }
+
+    public String createStoreString() {
+        StringBuilder strBuf = new StringBuilder(100);
+        strBuf.append(tableName);
+        strBuf.append("\t");
+
+        for (String key : this.infomationMap.keySet()) {
+            strBuf.append(key);
+            strBuf.append("\t");
+            strBuf.append(this.infomationMap.get(key));
+            strBuf.append("\t");
+        }
+
+        return strBuf.toString();
     }
 
     public String toString() {

@@ -133,7 +133,8 @@ public class DataAccessor {
             int ret = tableDataAccessor.create(tableInfo);
             logWriteLock.lock();
             try {
-                tansactionLogWrite("o5=" + tableInfo.toString());
+                //tansactionLogWrite("o5=" + tableInfo.createStoreString());
+                System.out.println("o5=" + tableInfo.createStoreString());
             } finally {
                 logWriteLock.unlock();
                 return ret;
