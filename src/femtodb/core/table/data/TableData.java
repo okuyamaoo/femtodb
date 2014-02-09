@@ -93,34 +93,6 @@ public class TableData {
         }
         
         return null;
-
-        /*
-        int nowSize = this.dataList.size();
-        ListIterator iter = dataList.listIterator(nowSize);
-
-        while (iter.hasPrevious()) {
-
-            TableDataTransfer tdt = (TableDataTransfer)iter.previous();
-
-            if (tdt.getTransactionNo().getTransactionNo() == targetTn.getTransactionNo()) {
-                if (tdt.isDeletedData()) {
-                    return null;
-                }
-                return tdt;
-            } else if (tdt.getTransactionNo().isCommited()) {
-                if (tdt.getTransactionNo().getTransactionNo() < targetTn.getTransactionNo()) {
-                    if (tdt.isDeletedData()) {
-                        return null;
-                    }
-                    return tdt;
-                }
-                if (tdt.isDeletedData()) {
-                    return null;
-                }
-                return tdt;
-            }
-        }
-        return null;*/
     }
 
     public void modData(TransactionNo tn, TableDataTransfer tableDataTransfer) throws DuplicateUpdateException {

@@ -26,6 +26,9 @@ public class DataAccessor {
     private Lock readLock = lock.readLock();
     private Lock writeLock = lock.writeLock();
 
+    private ReadWriteLock logLock = new ReentrantReadWriteLock(true);
+    private Lock logWriteLock = logLock.writeLock();
+
 
     public DataAccessor() {
         TransactionNoManager.initTransactionNoManager();
@@ -43,28 +46,80 @@ public class DataAccessor {
     public TransactionNo createTransaction() {
         readLock.lock();
         try {
-        
-            return TransactionNoManager.createTransactionNo();
+            TransactionNo tn = TransactionNoManager.createTransactionNo();
+            logWriteLock.lock();
+            try {
+                tansactionLogWrite("o1");
+            } finally {
+                logWriteLock.unlock();
+                return tn;
+            }
         } finally {
             readLock.unlock();
         }
     }
 
+
+    public boolean commitTransaction(long transactionNo) {
+        return commitTransaction(TransactionNoManager.getTransactionNoObejct(transactionNo));
+    }
+
     public boolean commitTransaction(TransactionNo transactionNo) {
         readLock.lock();
         try {
+            boolean ret = TransactionNoManager.commitTransaction(transactionNo);
+            logWriteLock.lock();
+            try {
+                tansactionLogWrite("o2=" + transactionNo.getTransactionNo());
+            } finally {
+                logWriteLock.unlock();
+                return ret;
+            }
 
-            return TransactionNoManager.commitTransaction(transactionNo);
         } finally {
             readLock.unlock();
         }
+    }
+
+    public boolean rollbackTransaction(long transactionNo) {
+        return rollbackTransaction(TransactionNoManager.getTransactionNoObejct(transactionNo));
     }
 
     public boolean rollbackTransaction(TransactionNo transactionNo) {
         readLock.lock();
         try {
 
-            return TransactionNoManager.rollbackTransaction(transactionNo);
+            boolean ret = TransactionNoManager.rollbackTransaction(transactionNo);
+            logWriteLock.lock();
+            try {
+                tansactionLogWrite("o3=" + transactionNo.getTransactionNo());
+            } finally {
+                logWriteLock.unlock();
+                return ret;
+            }
+
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    public boolean endTransaction(long transactionNo) {
+        return endTransaction(TransactionNoManager.getTransactionNoObejct(transactionNo));
+    }
+
+    public boolean endTransaction(TransactionNo transactionNo) {
+        readLock.lock();
+        try {
+
+            boolean ret = TransactionNoManager.endTransaction(transactionNo);
+            logWriteLock.lock();
+            try {
+                tansactionLogWrite("o4=" + transactionNo.getTransactionNo());
+            } finally {
+                logWriteLock.unlock();
+                return ret;
+            }
+
         } finally {
             readLock.unlock();
         }
@@ -76,7 +131,13 @@ public class DataAccessor {
 
             TableAccessor tableDataAccessor = new TableAccessor(this.tableManager);
             int ret = tableDataAccessor.create(tableInfo);
-            return ret;
+            logWriteLock.lock();
+            try {
+                tansactionLogWrite("o5=" + tableInfo.toString());
+            } finally {
+                logWriteLock.unlock();
+                return ret;
+            }
         } finally {
             readLock.unlock();
         }
@@ -119,6 +180,10 @@ public class DataAccessor {
     }
 
 
+    public int insertTableData(String tableName, long transactionNo, TableDataTransfer tableDataTransfer) throws InsertException {
+        return insertTableData(tableName, TransactionNoManager.getTransactionNoObejct(transactionNo), tableDataTransfer);
+    }
+
     public int insertTableData(String tableName, TransactionNo transactionNo, TableDataTransfer tableDataTransfer) throws InsertException {
         readLock.lock();
         try {
@@ -126,7 +191,15 @@ public class DataAccessor {
             InsertTableAccessor insertTableAccessor = new InsertTableAccessor(this.tableManager);
             try {
 
-                return insertTableAccessor.insert(tableName, transactionNo, tableDataTransfer);
+                int ret = insertTableAccessor.insert(tableName, transactionNo, tableDataTransfer);
+                logWriteLock.lock();
+                try {
+                    tansactionLogWrite("o6=" + tableName + "\t" + transactionNo.getTransactionNo() + "\t" + tableDataTransfer.toString());
+                } finally {
+                    logWriteLock.unlock();
+                    return ret;
+                }
+
             } catch (Exception e) {
                 throw new InsertException(e);
             }
@@ -151,13 +224,23 @@ public class DataAccessor {
     }
 
 
+    public int updateTableData(UpdateParameter updateParameter, long transactionNo) throws UpdateException {
+        return updateTableData(updateParameter, TransactionNoManager.getTransactionNoObejct(transactionNo));
+    }
+
     public int updateTableData(UpdateParameter updateParameter, TransactionNo transactionNo) throws UpdateException {
         readLock.lock();
         try {
             UpdateTableAccessor updateTableAccessor = new UpdateTableAccessor(this.tableManager);
             try {
-                int retCount = updateTableAccessor.update(updateParameter, transactionNo);
-                return retCount;
+                int ret = updateTableAccessor.update(updateParameter, transactionNo);
+                logWriteLock.lock();
+                try {
+                    tansactionLogWrite("o7=" + updateParameter.toString() + "\t" + transactionNo.getTransactionNo());
+                } finally {
+                    logWriteLock.unlock();
+                    return ret;
+                }
             } catch (DuplicateUpdateException due) {
                 this.rollbackTransaction(transactionNo);
                 throw new UpdateException("Duplicate update !! Auto rollback executed", due);
@@ -170,14 +253,23 @@ public class DataAccessor {
         }
     }
 
+    public int deleteTableData(DeleteParameter deleteParameter, long transactionNo) throws DeleteException {
+        return deleteTableData(deleteParameter, TransactionNoManager.getTransactionNoObejct(transactionNo));
+    }
 
     public int deleteTableData(DeleteParameter deleteParameter, TransactionNo transactionNo) throws DeleteException {
         readLock.lock();
         try {
             DeleteTableAccessor deleteTableAccessor = new DeleteTableAccessor(this.tableManager);
             try {
-                int retCount = deleteTableAccessor.delete(deleteParameter, transactionNo);
-                return retCount;
+                int ret = deleteTableAccessor.delete(deleteParameter, transactionNo);
+                logWriteLock.lock();
+                try {
+                    tansactionLogWrite("o8=" + deleteParameter.toString() + "\t" + transactionNo.getTransactionNo());
+                } finally {
+                    logWriteLock.unlock();
+                    return ret;
+                }
             } catch (DuplicateDeleteException due) {
                 this.rollbackTransaction(transactionNo);
                 throw new DeleteException("Duplicate delete data !! Auto rollback executed", due);
@@ -190,4 +282,7 @@ public class DataAccessor {
         }
     }
 
+    private boolean tansactionLogWrite(String logLine) {
+        return true;
+    }
 }
