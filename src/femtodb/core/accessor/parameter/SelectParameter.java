@@ -6,6 +6,8 @@ public class SelectParameter {
 
     private String tableName = null;
     private List<NormalWhereParameter> normalWhereParameterList = null;
+    private List<NormalWhereParameter> normalWhereParameterListLog = null;
+
     private NormalWhereParameter indexWhereParameter = null;
 
     public SelectParameter() {
@@ -13,6 +15,12 @@ public class SelectParameter {
 
     public void setNormalWhereParameterListObject(List<NormalWhereParameter> normalWhereParameterList) {
         this.normalWhereParameterList = normalWhereParameterList;
+        this.normalWhereParameterListLog = new ArrayList();
+        if (normalWhereParameterList != null) {
+            for (int i = 0; i < this.normalWhereParameterList.size(); i++) {
+                this.normalWhereParameterListLog.add(this.normalWhereParameterList.get(i));
+            }
+        }
     }
 
     public void setIndexWhereParameterObject(NormalWhereParameter indexWhereParameter) {
@@ -51,9 +59,13 @@ public class SelectParameter {
      *
      */
     public void addNormalWhereParameter(String columnName, int whereType, IWhereParameter parameter) {
-        if (normalWhereParameterList == null) normalWhereParameterList = new ArrayList();
+        if (this.normalWhereParameterList == null) {
+            this.normalWhereParameterList = new ArrayList();
+            this.normalWhereParameterListLog = new ArrayList();
+        }
         NormalWhereParameter normalWhere = new NormalWhereParameter(columnName, whereType, parameter);
         this.normalWhereParameterList.add(normalWhere);
+        this.normalWhereParameterListLog.add(normalWhere);
     }
 
     // Indexは1つのカラムのみセット可能
@@ -62,7 +74,10 @@ public class SelectParameter {
         NormalWhereParameter indexWhere = new NormalWhereParameter(columnName, whereType, parameter);
         this.indexWhereParameter = indexWhere;
 
-        if (normalWhereParameterList == null) normalWhereParameterList = new ArrayList();
+        if (normalWhereParameterList == null) {
+            normalWhereParameterList = new ArrayList();
+            this.normalWhereParameterListLog = new ArrayList();
+        }
         NormalWhereParameter normalWhere = new NormalWhereParameter(columnName, whereType, parameter);
         this.normalWhereParameterList.add(normalWhere);
     }
@@ -84,4 +99,28 @@ public class SelectParameter {
         }
     }
 
+
+
+    public String getTableString() {
+        return tableName;
+    }
+    public String getNormalWhereParameterListString() {
+        if (normalWhereParameterListLog == null) return null;
+        StringBuilder strBuf = new StringBuilder();
+        String sep ="";
+        for (int i = 0; i < normalWhereParameterListLog.size(); i++) {
+            strBuf.append(sep);
+            strBuf.append(normalWhereParameterListLog.get(i).toString());
+            sep = "\n";
+        }
+        return strBuf.toString();
+    }
+    public String getIndexWhereParameterString() {
+        StringBuilder strBuf = new StringBuilder();
+        String sep ="";
+        if (indexWhereParameter != null) {
+            strBuf.append(indexWhereParameter.toString());
+        }
+        return strBuf.toString();
+    }
 }

@@ -42,4 +42,18 @@ public class UpdateParameter extends SelectParameter {
         if (updateParameterMap == null) return 0;
         return updateParameterMap.size();
     }
+
+
+    public String getUpdateParameterMapString() {
+        StringBuilder strBuf = new StringBuilder();
+        String sep = "";
+        for (Iterator it = updateParameterMap.entrySet().iterator(); it.hasNext();) {
+            Map.Entry entry = (Map.Entry)it.next();
+            strBuf.append(sep);
+            UpdateColumnParameter param = (UpdateColumnParameter)entry.getValue();
+            strBuf.append(param.toString());
+            sep = "\n";
+        }
+        return strBuf.toString();
+    }
 }
