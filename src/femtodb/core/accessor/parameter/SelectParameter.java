@@ -100,10 +100,10 @@ public class SelectParameter {
     }
 
 
-
     public String getTableString() {
         return tableName;
     }
+
     public String getNormalWhereParameterListString() {
         if (normalWhereParameterListLog == null) return null;
         StringBuilder strBuf = new StringBuilder();
@@ -115,6 +115,18 @@ public class SelectParameter {
         }
         return strBuf.toString();
     }
+
+    public void setNormalWhereParameterListString(String str) {
+        if (str == null && str.trim().equals("")) return;
+
+        String[] parameterStrList = str.split("\n");
+        for (int i = 0; i < parameterStrList.length; i++) {
+            NormalWhereParameter normalWhereParameter = new NormalWhereParameter(parameterStrList[i]);
+
+            addNormalWhereParameter(normalWhereParameter.getColumnName(), normalWhereParameter.getWhereType(), normalWhereParameter.getParameter());
+        }
+    }
+
     public String getIndexWhereParameterString() {
         StringBuilder strBuf = new StringBuilder();
         String sep ="";
@@ -123,4 +135,13 @@ public class SelectParameter {
         }
         return strBuf.toString();
     }
+
+
+    public void setIndexWhereParameterString(String str) {
+        if (str == null && str.trim().equals("")) return;
+
+        NormalWhereParameter normalWhereParameter = new NormalWhereParameter(str);
+        setIndexWhereParameter(normalWhereParameter.getColumnName(), normalWhereParameter.getWhereType(), normalWhereParameter.getParameter());
+    }
+
 }

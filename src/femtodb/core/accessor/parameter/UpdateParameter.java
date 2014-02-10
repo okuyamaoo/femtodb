@@ -56,4 +56,12 @@ public class UpdateParameter extends SelectParameter {
         }
         return strBuf.toString();
     }
+
+    public void setUpdateParameterMapString(String mapStr) {
+        String[] mapStrList = mapStr.split("\n");
+        for (int i = 0; i < mapStrList.length; i++) {
+            UpdateColumnParameter updateColumnParameter = new UpdateColumnParameter(mapStrList[i]);
+            setUpdateParameter(updateColumnParameter.getColumnName(), new StringUpdateParameter(updateColumnParameter.getColumnData()));
+        }
+    }
 }
