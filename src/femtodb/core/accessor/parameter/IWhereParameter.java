@@ -1,1 +1,1 @@
-package femtodb.core.accessor.parameter;public interface IWhereParameter {}
+package femtodb.core.accessor.parameter;public interface IWhereParameter {    public String toStoreString();}

@@ -25,6 +25,7 @@ public class TableAccessor {
                 int ret = this.tableManager.create(info);
                 return ret;
             } else {
+
                 // 既にテーブルが存在する
                 return TableAccessor.TABLE_CREATE_EXIST_ERROR;
             }

@@ -21,6 +21,7 @@ import femtodb.core.accessor.parameter.*;
 public class DataAccessor {
 
     private TableManager tableManager = null;
+    private DataOperationLogManager dataOperationLogManager = null;
 
     private ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private Lock readLock = lock.readLock();
@@ -29,18 +30,23 @@ public class DataAccessor {
     private ReadWriteLock logLock = new ReentrantReadWriteLock(true);
     private Lock logWriteLock = logLock.writeLock();
 
+    private boolean logWriteFlg = false;
 
-    public DataAccessor() {
+    public DataAccessor() throws Exception {
         TransactionNoManager.initTransactionNoManager();
         TableManager.initOid();
         this.tableManager = new TableManager();
+        
+        this.dataOperationLogManager = new DataOperationLogManager("./op.log", this);
+        logWriteFlg = true;
     }
 
-    public DataAccessor(long setTransactionNo, long setOid) {
+    public DataAccessor(long setTransactionNo, long setOid) throws Exception {
         TransactionNoManager.initTransactionNoManager(setTransactionNo);
         TableManager.initOid(setOid);
-        
         this.tableManager = new TableManager();
+        this.dataOperationLogManager = new DataOperationLogManager("./op.log", this);
+        logWriteFlg = true;
     }
 
     public TransactionNo createTransaction() {
@@ -49,7 +55,7 @@ public class DataAccessor {
             TransactionNo tn = TransactionNoManager.createTransactionNo();
             logWriteLock.lock();
             try {
-                tansactionLogWrite("o1");
+                tansactionLogWrite(new Integer(1));
             } finally {
                 logWriteLock.unlock();
                 return tn;
@@ -70,7 +76,7 @@ public class DataAccessor {
             boolean ret = TransactionNoManager.commitTransaction(transactionNo);
             logWriteLock.lock();
             try {
-                tansactionLogWrite("o2=" + transactionNo.getTransactionNo());
+                tansactionLogWrite(new Integer(2), transactionNo);
             } finally {
                 logWriteLock.unlock();
                 return ret;
@@ -92,7 +98,7 @@ public class DataAccessor {
             boolean ret = TransactionNoManager.rollbackTransaction(transactionNo);
             logWriteLock.lock();
             try {
-                tansactionLogWrite("o3=" + transactionNo.getTransactionNo());
+                tansactionLogWrite(new Integer(3), transactionNo);
             } finally {
                 logWriteLock.unlock();
                 return ret;
@@ -114,7 +120,7 @@ public class DataAccessor {
             boolean ret = TransactionNoManager.endTransaction(transactionNo);
             logWriteLock.lock();
             try {
-                tansactionLogWrite("o4=" + transactionNo.getTransactionNo());
+                tansactionLogWrite(new Integer(4), transactionNo);
             } finally {
                 logWriteLock.unlock();
                 return ret;
@@ -130,15 +136,19 @@ public class DataAccessor {
         try {
 
             TableAccessor tableDataAccessor = new TableAccessor(this.tableManager);
+
             int ret = tableDataAccessor.create(tableInfo);
-            logWriteLock.lock();
-            try {
-                //tansactionLogWrite("o5=" + tableInfo.createStoreString());
-                System.out.println("o5=" + tableInfo.createStoreString());
-            } finally {
-                logWriteLock.unlock();
-                return ret;
+            if (ret == 1) {
+                logWriteLock.lock();
+                try {
+                    tansactionLogWrite(new Integer(5), tableInfo);
+    //                System.out.println("o5=" + tableInfo.createStoreString());
+                } finally {
+                    logWriteLock.unlock();
+                    return ret;
+                }
             }
+            return 2;
         } finally {
             readLock.unlock();
         }
@@ -195,7 +205,7 @@ public class DataAccessor {
                 int ret = insertTableAccessor.insert(tableName, transactionNo, tableDataTransfer);
                 logWriteLock.lock();
                 try {
-                    tansactionLogWrite("o6=" + tableName + "\t" + transactionNo.getTransactionNo() + "\t" + tableDataTransfer.toString());
+                    tansactionLogWrite(new Integer(6), tableName, transactionNo, tableDataTransfer);
                 } finally {
                     logWriteLock.unlock();
                     return ret;
@@ -237,7 +247,7 @@ public class DataAccessor {
                 int ret = updateTableAccessor.update(updateParameter, transactionNo);
                 logWriteLock.lock();
                 try {
-                    tansactionLogWrite("o7=" + updateParameter.toString() + "\t" + transactionNo.getTransactionNo());
+                    tansactionLogWrite(new Integer(7), updateParameter, transactionNo);
                 } finally {
                     logWriteLock.unlock();
                     return ret;
@@ -264,13 +274,15 @@ public class DataAccessor {
             DeleteTableAccessor deleteTableAccessor = new DeleteTableAccessor(this.tableManager);
             try {
                 int ret = deleteTableAccessor.delete(deleteParameter, transactionNo);
+
                 logWriteLock.lock();
                 try {
-                    tansactionLogWrite("o8=" + deleteParameter.toString() + "\t" + transactionNo.getTransactionNo());
+                    tansactionLogWrite(new Integer(8), deleteParameter, transactionNo);
                 } finally {
                     logWriteLock.unlock();
                     return ret;
                 }
+
             } catch (DuplicateDeleteException due) {
                 this.rollbackTransaction(transactionNo);
                 throw new DeleteException("Duplicate delete data !! Auto rollback executed", due);
@@ -283,7 +295,12 @@ public class DataAccessor {
         }
     }
 
-    private boolean tansactionLogWrite(String logLine) {
-        return true;
+
+
+    private boolean tansactionLogWrite(Object... logObjects) {
+        if (logWriteFlg) return this.dataOperationLogManager.operationLogWrite(logObjects);
+
+        return false;
     }
+
 }

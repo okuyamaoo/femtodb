@@ -12,29 +12,16 @@ public class TableInfo {
     public Map<String, IColumnType> infomationMap = new LinkedHashMap<String, IColumnType>();
 
 
+    public TableInfo() {
+    }
+
     public TableInfo(String tableName) {
         this.tableName = tableName;
     }
 
-    public TableInfo(String[] logString) {
-        this.tableName = logString[0];
-        try {
-            if (logString.length > 1) {
-                for (int i = 0; i < logString.length; i=i+2) {
-
-                    if (logString[i+1].equals("Number type")) {
-                        infomationMap.put(logString[i], new ColumnTypeNumber());
-                    } else if (logString[i+1].equals("Varchar type")) {
-                        infomationMap.put(logString[i], new ColumnTypeVarchar());
-                    }
-                }
-            }
-        } catch (Exception e) {}
-    }
-
-
     public void addTableColumnInfo(String columnName, IColumnType columnType) throws TableInfoException {
         if (this.infomationMap.containsKey(columnName)) throw new TableInfoException(columnName + " column exist");
+        
         this.infomationMap.put(columnName, columnType);
     }
 
@@ -69,6 +56,24 @@ public class TableInfo {
         }
 
         return strBuf.toString();
+    }
+
+    public void setupStoreString(String storeString) {
+        String[] logString = storeString.split("\t");
+
+        this.tableName = logString[0];
+        try {
+            if (logString.length > 1) {
+                for (int i = 1; i < logString.length; i=i+2) {
+
+                    if (logString[i+1].equals("Number type")) {
+                        infomationMap.put(logString[i], new ColumnTypeNumber());
+                    } else if (logString[i+1].equals("Varchar type")) {
+                        infomationMap.put(logString[i], new ColumnTypeVarchar());
+                    }
+                }
+            }
+        } catch (Exception e) {}
     }
 
     public String toString() {

@@ -34,6 +34,7 @@ public class DefaultTable extends AbstractTable implements ITable {
         this.dataMap = new ConcurrentHashMap<Long, TableData>(1000000);
         this.indexsMap = new ConcurrentHashMap<String, IndexMap>();
 
+
         if (indexColumnNames != null && indexColumnNames.length > 0) {
             for (int idx = 0; idx < indexColumnNames.length; idx++) {
                 this.indexsMap.put(indexColumnNames[idx], new IndexMap(indexColumnNames[idx], new CharacterIndexComparator(), dataMap));
