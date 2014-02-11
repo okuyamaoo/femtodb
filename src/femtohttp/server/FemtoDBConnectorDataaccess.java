@@ -12,12 +12,16 @@ public class FemtoDBConnectorDataaccess  extends HttpServlet {
 
     /** 
      * データを取得する.<br>
-     * 本メソッドは指定されたテーブルを指定された条件(条件は存在しない場合はもある)のもとデータを検索し返却する.<br>
+     * 本メソッドは指定されたテーブルを指定された条件(条件は存在しない場合もある)のもとデータを検索し返却する.<br>
      *
      * @param request 必須となるURLパラメータは以下となる<br>
      * "table" : 検索を行うテーブル名を指定する<br>
      * 必須ではないが指定可能なURLは以下<br>
-     * "transactionno" : 予め取得した
+     * "transactionno" : 予め取得したトランザクション番号<br>
+     * "table" : テーブル名<br>
+     * "table" : テーブル名<br>
+     *
+     *
      *
      * @param response 
      * @throws ServletException
