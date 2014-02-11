@@ -42,6 +42,7 @@ public class FemtoHttpServer {
         ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
         handler.addServletWithMapping(femtohttp.server.FemtoDBConnectorTransaction.class, "/femtodb/transaction");
+        handler.addServletWithMapping(femtohttp.server.FemtoDBConnectorTable.class, "/femtodb/table");
         handler.addServletWithMapping(femtohttp.server.FemtoDBConnectorDataaccess.class, "/femtodb/dataaccess");
 
         ServerConnector http = new ServerConnector(server);

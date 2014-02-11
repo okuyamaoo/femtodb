@@ -76,15 +76,16 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
             response.getWriter().println(strBuf.toString());
             return;
         }
+
         String method = request.getParameter("method");
         boolean result = false;
 
         if (method.equals("commit")) {
             // commit処理
-            result = FemtoHttpServer.dataAccessor.commitTransaction(new Long(transactionNo).longValue());
+            result = FemtoHttpServer.dataAccessor.commitTransaction(transactioNoLong);
         } else if (method.equals("rollback")) {
             // rollback処理
-            result = FemtoHttpServer.dataAccessor.rollbackTransaction(new Long(transactionNo).longValue());
+            result = FemtoHttpServer.dataAccessor.rollbackTransaction(transactioNoLong);
         }
         
         StringBuilder strBuf = new StringBuilder();
@@ -96,16 +97,57 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
         response.getWriter().println(strBuf.toString());
     }
 
-    /**
-     * femtoserver?
+
+    /** 
+     * トランザクションを終了する.<br>
+     * 返却値として成否が返される.<br>
+     * 本リクエストはパラメータとして以下を必要とする.<br>
+     * "transactionno" 対象とするトランザクションの番号 <br>
+     *<br><br>
+     * 返却値はJSONフォーマットで{"result":"true"}となり左辺の文字列は"true" or "false"である<br>
+     *<br>
+     * URLの例 /femtodb/transaction?transactionno=23<br>
      *
-     *
-     *
+     * @param request
+     * @param response 
+     * @throws ServletException
+     * @throws IOException
      */
-    private void executeRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        String transactionNo = request.getParameter("transactionno");
+        long transactioNoLong = -1L;
         try {
-            
-        } catch (Exception e) {
+            transactioNoLong = new Long(transactionNo).longValue();
+        } catch (Exception e2) {
+            StringBuilder strBuf = new StringBuilder();
+            strBuf.append("{\"result\":\"");
+            strBuf.append("false");
+            strBuf.append("\"}");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("application/json; charset=utf-8");
+            response.getWriter().println(strBuf.toString());
+            return;
         }
+
+        String method = request.getParameter("method");
+        boolean result = false;
+
+        if (method.equals("commit")) {
+            // commit処理
+            result = FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
+        } else if (method.equals("rollback")) {
+            // rollback処理
+            result = FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
+        }
+        
+        StringBuilder strBuf = new StringBuilder();
+        strBuf.append("{\"result\":\"");
+        strBuf.append(result);
+        strBuf.append("\"}");
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/json; charset=utf-8");
+        response.getWriter().println(strBuf.toString());
     }
+
 }
