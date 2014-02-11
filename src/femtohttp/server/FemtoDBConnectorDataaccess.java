@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class FemtoDBConnector  extends HttpServlet { 
+public class FemtoDBConnectorDataaccess  extends HttpServlet { 
 
     /** 
      * データを取得する.<br>

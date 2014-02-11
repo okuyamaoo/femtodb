@@ -48,6 +48,7 @@ public class DeleteTableAccessor {
             iterator.nextEntry();
             TableData tableData = (TableData)iterator.getEntryValue();
             TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
+            if (tableDataTransfer == null) continue; // Delete済みのTableDataの場合はTableTransaferはnull
             TableDataTransfer deleteTableDataTransfer = tableDataTransfer.clone4Delete();
 
             try {

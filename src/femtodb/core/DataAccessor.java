@@ -67,7 +67,9 @@ public class DataAccessor {
 
 
     public boolean commitTransaction(long transactionNo) {
-        return commitTransaction(TransactionNoManager.getTransactionNoObejct(transactionNo));
+        TransactionNo tn = TransactionNoManager.getTransactionNoObejct(transactionNo);
+        if (tn == null) return false;
+        return commitTransaction(tn);
     }
 
     public boolean commitTransaction(TransactionNo transactionNo) {
@@ -88,7 +90,10 @@ public class DataAccessor {
     }
 
     public boolean rollbackTransaction(long transactionNo) {
-        return rollbackTransaction(TransactionNoManager.getTransactionNoObejct(transactionNo));
+        TransactionNo tn = TransactionNoManager.getTransactionNoObejct(transactionNo);
+        if (tn == null) return false;
+
+        return rollbackTransaction(tn);
     }
 
     public boolean rollbackTransaction(TransactionNo transactionNo) {
