@@ -224,6 +224,10 @@ public class DataAccessor {
         }
     }
 
+    public List<TableDataTransfer> selectTableData(SelectParameter selectParameter, long transactionNo) throws SelectException {
+        return selectTableData(selectParameter, TransactionNoManager.getTransactionNoObejct(transactionNo));
+    }
+
     public List<TableDataTransfer> selectTableData(SelectParameter selectParameter, TransactionNo transactionNo) throws SelectException {
         readLock.lock();
         try {

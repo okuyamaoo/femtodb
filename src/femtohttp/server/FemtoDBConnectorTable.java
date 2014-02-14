@@ -53,7 +53,7 @@ public class FemtoDBConnectorTable  extends HttpServlet {
 
         int result = -1;
         try {
-            String indexColumns = request.getParameter("indexcoolumns");
+            String indexColumns = request.getParameter("indexcolumns");
             String[] indexColumnList = null;
             if (indexColumns != null && indexColumns.trim().equals("")) {
                 indexColumnList = indexColumns.split(",");
