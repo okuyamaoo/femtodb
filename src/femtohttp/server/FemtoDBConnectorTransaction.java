@@ -130,16 +130,15 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
             return;
         }
 
-        String method = request.getParameter("method");
-        boolean result = false;
-
-        if (method.equals("commit")) {
-            // commit処理
-            result = FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
-        } else if (method.equals("rollback")) {
-            // rollback処理
-            result = FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
+        // TransactionNoの存在確認
+        if (!FemtoHttpServer.dataAccessor.existsTransactionNo(transactioNoLong)) {
+            response.setContentType("text/html");
+            response.setStatus(400);
+            response.getWriter().println("The 'transactionno'  specified does not exist");
+            return;
         }
+
+        boolean result = FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
         
         StringBuilder strBuf = new StringBuilder();
         strBuf.append("{\"result\":\"");
