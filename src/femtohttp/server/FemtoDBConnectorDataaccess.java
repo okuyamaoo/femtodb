@@ -22,6 +22,8 @@ import femtodb.core.accessor.parameter.*;
 
 public class FemtoDBConnectorDataaccess extends HttpServlet { 
 
+    private boolean debug = true;
+
     /** 
      * データを取得する.<br>
      * 本メソッドは指定されたテーブルを指定された条件(条件は存在しない場合もある)のもとデータを検索し返却する.<br>
@@ -47,16 +49,28 @@ public class FemtoDBConnectorDataaccess extends HttpServlet {
      * @throws IOException
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (debug) System.out.println(request.getParameterMap());
+        boolean onceTransaction = false;
+        long tansactionNo = -1L;
 
         // 必須条件を取得
         try {
             String tableName = request.getParameter("table");
             TableInfo tableInfo = null;
-            if (tableName == null || tableName.trim().equals("") || (tableInfo = FemtoHttpServer.dataAccessor.getTableInfo(tableName.trim().toLowerCase())) == null) {
+            if (tableName == null || tableName.trim().equals("")) {
                 // テーブル名なし
                 response.setContentType("text/html");
                 response.setStatus(400);
                 response.getWriter().println("'table' Parameter not found.");
+                return;
+            }
+
+            // テーブルの存在確認
+            if ((tableInfo = FemtoHttpServer.dataAccessor.getTableInfo(tableName.trim().toLowerCase())) == null) {
+                // テーブル名なし
+                response.setContentType("text/html");
+                response.setStatus(400);
+                response.getWriter().println("'" + tableName + "' table not found.");
                 return;
             }
             tableName = tableName.trim().toLowerCase();
@@ -65,7 +79,6 @@ public class FemtoDBConnectorDataaccess extends HttpServlet {
             // TransactionNo
             // 妥当性チェックと返却
             String tnNoStr = request.getParameter("transactionno");
-            long tansactionNo = -1L;
             if (tnNoStr != null) {
                 // 指定あり
                 // 妥当性確認
@@ -81,11 +94,25 @@ public class FemtoDBConnectorDataaccess extends HttpServlet {
                 if (!executeWhereValidate(response, whereList)) return;
             }
     
-            // TODO:limit, offset, orderby 未実装
-    
+            // limit offset取得
+            String limitStr = request.getParameter("limit");
+            if (limitStr != null) {
+                // 指定あり
+                // 妥当性確認
+                if (!executeLimitValidate(response, limitStr)) return;
+            }
+
+            String offsetStr = request.getParameter("offset");
+            if (offsetStr != null) {
+                // 指定あり
+                // 妥当性確認
+                if (!executeOffsetValidate(response, offsetStr)) return;
+            }
+
+            // TODO:orderby 未実装
+            
     
             // トランザクションNoを指定していない場合は一回利用のTransactionNoオブジェクトを作成し番号を取得
-            boolean onceTransaction = false;
             if (tansactionNo == -1) {
                 tansactionNo = getTransactionNo();
                 onceTransaction = true;
@@ -96,34 +123,170 @@ public class FemtoDBConnectorDataaccess extends HttpServlet {
             SelectParameter sp = new SelectParameter();
             // Table指定
             sp.setTableName(tableInfo.tableName);
-    
+
             // WhereはIndexと通常カラムで異なる
             settingWhereParameter(tableInfo, sp, whereList);
-    
-            // TODO : 以降limit, offset, orderby 未実装
+
+            // limit
+            settingLimitParameter(sp, limitStr);
+
+            // offset
+            settingOffsetParameter(sp, offsetStr);
+
+            // TODO : orderby 未実装
             
             // 実行
             long queryStartTime = System.nanoTime();
-            List resultList = FemtoHttpServer.dataAccessor.selectTableData(sp, tansactionNo);
+            List<TableDataTransfer> resultList = FemtoHttpServer.dataAccessor.selectTableData(sp, tansactionNo);
             long queryEndTime = System.nanoTime();
 
-            // TODO:JSONデコードする前にTableDataTransferからカラムとデータだけ抜き出してそれをMapにしてJSONデコードしないといけない
+            // JSONデコードする前にTableDataTransferからカラムとデータだけ抜き出してそれをMapにしてJSONデコード
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("application/json; charset=utf-8");
-            response.getWriter().print(JSON.encode(resultList));
+            response.getWriter().print("[");
+            // 返却用のデータへ変換
+            String sep = "";
+            for (int idx = 0; idx < resultList.size(); idx++) {
+                response.getWriter().print(sep);
+                TableDataTransfer tableDataTransfer = resultList.get(idx);
+                response.getWriter().print(JSON.encode(tableDataTransfer.getDataMap()));
+                if (idx > 0 && ((idx % 50) == 0)) response.getWriter().flush();
+                if (idx == 0) sep = ",";
+            }
+            response.getWriter().print("]");
             response.getWriter().flush();
             return;
         } catch (Exception e) {
             e.printStackTrace();
             response.setStatus(500);
+        } finally {
+            if (onceTransaction) {
+                FemtoHttpServer.dataAccessor.endTransaction(tansactionNo);
+            }
         }
     }
 
-/*    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    /** 
+     * データを登録する.<br>
+     * 本メソッドは指定されたテーブル指定されたデータを登録する.<br>
+     * 登録するデータはKey=Valueのデータの複数の集合を1つのデータの集まりとして指定したテーブルへ保存する.<br>
+     * 登録するデータは複数個指定可能である。
+     *
+     * @param request 必須となるURLパラメータは以下となる<br>
+     * "table" : 登録を行うテーブル名を指定する<br>
+     * "data" : JSONフォーマットでのKey=Value景色の集合(連想配列)
+     * 必須ではないが指定可能なURLは以下<br>
+     * "transactionno" : 予め取得したトランザクション番号<br>
+     *
+     * @param response 
+     * @throws ServletException
+     * @throws IOException
+     */
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (debug) System.out.println(request.getParameterMap());
+        boolean onceTransaction = false;
+        long tansactionNo = -1L;
 
-        this.executeRequest(request, response);
+        // 必須条件を取得
+        try {
+            String tableName = request.getParameter("table");
+            TableInfo tableInfo = null;
+            if (tableName == null || tableName.trim().equals("")) {
+                // テーブル名なし
+                response.setContentType("text/html");
+                response.setStatus(400);
+                response.getWriter().println("'table' Parameter not found.");
+                return;
+            }
+
+            // テーブルの存在確認
+            if ((tableInfo = FemtoHttpServer.dataAccessor.getTableInfo(tableName.trim().toLowerCase())) == null) {
+                // テーブル名なし
+                response.setContentType("text/html");
+                response.setStatus(400);
+                response.getWriter().println("'" + tableName + "' table not found.");
+                return;
+            }
+            tableName = tableName.trim().toLowerCase();
+    
+            // TransactionNo
+            // 妥当性チェックと返却
+            String tnNoStr = request.getParameter("transactionno");
+
+            if (tnNoStr != null) {
+                // 指定あり
+                // 妥当性確認
+                if (!executeTransactionNoValidate(response, tnNoStr)) return;
+                tansactionNo = new Long(tnNoStr).longValue();
+            }
+
+            // 登録データ部分取得
+            String[] dataList = request.getParameterValues("data");
+            if (dataList == null || dataList.length < 1) {
+                // テーブル名なし
+                response.setContentType("text/html");
+                response.setStatus(400);
+                response.getWriter().println("'data' Parameter not found.");
+                return;
+            }
+
+            // 全てのデータの妥当性を検証し全てエラーでない場合のみ登録
+            // 検証と同時にMapとして取得
+            List<Map<String, String>> insertDataList = new ArrayList();
+            if (!executeDataValidateAndConvert(response, dataList, insertDataList)) return;
+
+            // 登録処理
+            // TransactionNoが指定されていない場合作成
+            if (tansactionNo == -1) {
+                tansactionNo = getTransactionNo();
+                onceTransaction = true;
+            }
+
+            try {
+                for (int idx = 0; idx < insertDataList.size(); idx++) {
+                    TableDataTransfer tableDataTransfer = new TableDataTransfer();
+    
+                    Map<String, String> insertData = insertDataList.get(idx);
+                    for (Iterator ite = insertData.entrySet().iterator(); ite.hasNext();) {
+                        Map.Entry<String, String> entry = (Map.Entry)ite.next();
+                        String key = entry.getKey();
+                        String value = entry.getValue();
+                        tableDataTransfer.setColumnData(key, value);
+                    }
+                    FemtoHttpServer.dataAccessor.insertTableData(tableName, tansactionNo, tableDataTransfer);
+                }
+            } catch (ClassCastException cce) {
+                // 登録データがString=Stringの形式でない
+                response.setContentType("text/html");
+                response.setStatus(400);
+                response.getWriter().println("'data' Format violation.");
+                return;
+            }
+
+            // TransactionNo指定なしの場合ここでCommit
+            if (onceTransaction) {
+                FemtoHttpServer.dataAccessor.commitTransaction(tansactionNo);
+                FemtoHttpServer.dataAccessor.endTransaction(tansactionNo);
+                tansactionNo = -1L;
+            }
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("application/json; charset=utf-8");
+            response.getWriter().print("{\"result\":" +insertDataList.size() + "}");
+            response.getWriter().flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setStatus(500);
+        } finally {
+            if (onceTransaction) {
+                if (tansactionNo != -1L) {
+                    FemtoHttpServer.dataAccessor.rollbackTransaction(tansactionNo);
+                    FemtoHttpServer.dataAccessor.endTransaction(tansactionNo);
+                }
+            }
+        }
     }
-*/
+
     /**
      * femtoserver?
      *
@@ -145,11 +308,25 @@ public class FemtoDBConnectorDataaccess extends HttpServlet {
                 // 定義済みIndexカラムか通常のカラムの判断
                 if (tableInfo.existColumn(columneName)) {
                     // 定義済みIndex
+                    if (debug) System.out.println("where - index Parameter: column=[" + columneName + "] parameter=[" +  whereDetail[1] + "]");
                     sp.setIndexWhereParameter(columneName, IWhereType.WHERE_TYPE_EQUAL, new EqualWhereParameter(whereDetail[1]));
                 } else {
+                    if (debug) System.out.println("where - normal Parameter: column=[" + columneName + "] parameter=[" +  whereDetail[1] + "]");
                     sp.addNormalWhereParameter(columneName, IWhereType.WHERE_TYPE_EQUAL, new EqualWhereParameter(whereDetail[1]));
                 }
             }
+        }
+    }
+
+    private void settingLimitParameter(SelectParameter sp, String limitStr) {
+        if (limitStr != null) {
+            sp.setLimit(new Integer(limitStr).intValue());
+        }
+    }
+    
+    private void settingOffsetParameter(SelectParameter sp, String offsetStr) {
+        if (offsetStr != null) {
+            sp.setOffset(new Integer(offsetStr).intValue());
         }
     }
 
@@ -210,7 +387,52 @@ public class FemtoDBConnectorDataaccess extends HttpServlet {
         return true;
     }
 
+    private boolean executeLimitValidate(HttpServletResponse response, String limitStr) throws ServletException, IOException {
+
+        // limitは正数である必要がある
+        try {
+            new Integer(limitStr);
+        } catch (NumberFormatException e) {
+            response.setContentType("text/html");
+            response.setStatus(400);
+            response.getWriter().println("'limit' Format violation.");
+            return false;
+        }
+        return true;
+    }
 
 
+    private boolean executeOffsetValidate(HttpServletResponse response, String offsetStr) throws ServletException, IOException {
 
+        // offsetは正数である必要がある
+        try {
+            new Integer(offsetStr);
+        } catch (NumberFormatException e) {
+            response.setContentType("text/html");
+            response.setStatus(400);
+            response.getWriter().println("'offset' Format violation.");
+            return false;
+        }
+        return true;
+    }
+
+
+    private boolean executeDataValidateAndConvert(HttpServletResponse response, String[] dataList, List convertStoreList) throws ServletException, IOException {
+
+        // 登録データをJSON形式からMapへ変換
+        try {
+
+            for (int idx = 0; idx < dataList.length; idx++) {
+                Map<String, String> targetData = (Map<String, String>)JSON.decode(dataList[idx]);
+
+                convertStoreList.add(targetData);
+            }
+        } catch (Exception e) {
+            response.setContentType("text/html");
+            response.setStatus(400);
+            response.getWriter().println("'data' Format violation.");
+            return false;
+        }
+        return true;
+    }
 }
