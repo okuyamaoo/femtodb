@@ -136,6 +136,10 @@ public class DataAccessor {
         }
     }
 
+    public boolean existsTransactionNo(long transactionNo) {
+        return TransactionNoManager.existsTransactionNoObejct(transactionNo);
+    }
+
     public int createTable(TableInfo tableInfo) {
         readLock.lock();
         try {

@@ -169,8 +169,9 @@ public class FemtoDBConnectorDataaccess extends HttpServlet {
     /** 
      * データを登録する.<br>
      * 本メソッドは指定されたテーブル指定されたデータを登録する.<br>
-     * 登録するデータはKey=Valueのデータの複数の集合を1つのデータの集まりとして指定したテーブルへ保存する.<br>
-     * 登録するデータは複数個指定可能である。
+     * 登録するデータはKey=Valueのデータの複数の集合を1つのデータの集まりとして指定したテーブルへ保存する<br>
+     * 登録するデータは複数個指定可能である。<br>
+     * 返却値はJSON形式で{"result":登録件数}となる<br>
      *
      * @param request 必須となるURLパラメータは以下となる<br>
      * "table" : 登録を行うテーブル名を指定する<br>
@@ -344,6 +345,14 @@ public class FemtoDBConnectorDataaccess extends HttpServlet {
                         response.setContentType("text/html");
                         response.setStatus(400);
                         response.getWriter().println("'transactionno' Can specify only positive number.");
+                        return false;
+                    }
+
+                    // TransactionNoの存在確認
+                    if (!FemtoHttpServer.dataAccessor.existsTransactionNo(tansactionNo)) {
+                        response.setContentType("text/html");
+                        response.setStatus(400);
+                        response.getWriter().println("The 'transactionno'  specified does not exist");
                         return false;
                     }
                 } catch (NumberFormatException nfe) {
