@@ -21,13 +21,18 @@ public class SelectTableAccessor {
     }
 
     public List<TableDataTransfer> select(SelectParameter selectParameter, TransactionNo transactionNo) {
+        List resultList = null;
         if (selectParameter.existNormalWhereParameter() || selectParameter.existIndexWhereParameter()) {
             
-            return select(selectParameter.getTableName(), selectParameter, transactionNo);
+            resultList = select(selectParameter.getTableName(), selectParameter, transactionNo);
         } else {
             // 全件取得
-            return select(selectParameter.getTableName(), transactionNo);
+            resultList = select(selectParameter.getTableName(), transactionNo);
         }
+
+        // Limit Offset は簡易実装
+        resultList = limitOffset(resultList, selectParameter);
+        return resultList;
     }
 
     /**
@@ -106,4 +111,45 @@ public class SelectTableAccessor {
         return allData;
     }
 
+    /**
+     * Limit Offsetは簡易実装.<br>
+     * TODO:order by と合わせて今後修正<br>
+     */
+    private List<TableDataTransfer> limitOffset(List<TableDataTransfer> resultList, SelectParameter selectParameter) {
+        try {
+            if(resultList != null && selectParameter.getLimit() != -1 && selectParameter.getOffset() != -1) {
+    
+                // limit offsetが全部指定
+                int fromIndex = selectParameter.getOffset() - 1;
+                if (fromIndex < 0) fromIndex = 0;
+                int toIndex = fromIndex + selectParameter.getLimit();
+    
+                if (toIndex > resultList.size()) toIndex = resultList.size();
+    
+                return resultList.subList(fromIndex, toIndex);
+            } else if(resultList != null && selectParameter.getLimit() != -1 && selectParameter.getOffset() == -1) {
+    
+                // limit が指定
+                int fromIndex = 0;
+                int toIndex = fromIndex + selectParameter.getLimit();
+    
+                if (toIndex > resultList.size()) toIndex = resultList.size();
+    
+                return resultList.subList(fromIndex, toIndex);
+            } else if(resultList != null && selectParameter.getLimit() == -1 && selectParameter.getOffset() != -1) {
+    
+                // offset が指定
+                int fromIndex = selectParameter.getOffset() - 1;
+                if (fromIndex < 0) fromIndex = 0;
+                int toIndex = resultList.size();
+    
+                return resultList.subList(fromIndex, toIndex);
+            } else {
+                return resultList;
+            }
+        } catch (IllegalArgumentException e) {
+            // limit offset 指定間違い
+            return new ArrayList();
+        }
+    }
 }

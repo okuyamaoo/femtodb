@@ -8,6 +8,11 @@ public class SelectParameter {
     private List<NormalWhereParameter> normalWhereParameterList = null;
     private List<NormalWhereParameter> normalWhereParameterListLog = null;
 
+//    private List<SortParameter> sortParameterList = null;
+
+    private int limit = -1;
+    private int offset = -1;
+
     private NormalWhereParameter indexWhereParameter = null;
 
     public SelectParameter() {
@@ -53,7 +58,12 @@ public class SelectParameter {
         if (normalWhereParameterList == null) return false;
         return true;
     }
-
+/*
+    public boolean existSortParameter() {
+        if (sortParameterList == null) return false;
+        return true;
+    }
+*/
     /**
      * 通常のWhere条件を追加
      *
@@ -99,6 +109,33 @@ public class SelectParameter {
         }
     }
 
+/*    public int sortParameterSize() {
+        return sortParameterList.size();
+    }
+*/
+    // 条件が終了した場合nullを返す
+/*    public SortParameter nextSortParameter() {
+        if (sortParameterList != null && sortParameterList.size() > 0) {
+            return sortParameterList.remove(0);
+        } else {
+            return null;
+        }
+    }
+*/
+
+    /**
+     * Sort条件を追加
+     * sortType:1=String+asc, 2=String+desc, 3=Number+asc, 4=Number+desc
+     */
+/*    public void addSortParameter(String columnName, int sortType) {
+        if (this.sortParameterList == null) {
+            this.sortParameterList = new ArrayList();
+        }
+        SortParameter normalWhere = new SortParameter(columnName, sortType);
+        this.normalWhereParameterList.add(normalWhere);
+        this.normalWhereParameterListLog.add(normalWhere);
+    }
+*/
 
     public String getTableString() {
         return tableName;
@@ -144,4 +181,21 @@ public class SelectParameter {
         setIndexWhereParameter(normalWhereParameter.getColumnName(), normalWhereParameter.getWhereType(), normalWhereParameter.getParameter());
     }
 
+    public void setLimit(int limit) {
+        this.limit = limit;
+    }
+
+
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+
+    public int getLimit() {
+        return this.limit;
+    }
+
+
+    public int getOffset() {
+        return this.offset;
+    }
 }
