@@ -8,7 +8,7 @@ public class SelectParameter {
     private List<NormalWhereParameter> normalWhereParameterList = null;
     private List<NormalWhereParameter> normalWhereParameterListLog = null;
 
-//    private List<SortParameter> sortParameterList = null;
+    private List<SortParameter> sortParameterList = null;
 
     private int limit = -1;
     private int offset = -1;
@@ -58,12 +58,12 @@ public class SelectParameter {
         if (normalWhereParameterList == null) return false;
         return true;
     }
-/*
+
     public boolean existSortParameter() {
         if (sortParameterList == null) return false;
         return true;
     }
-*/
+
     /**
      * 通常のWhere条件を追加
      *
@@ -109,33 +109,28 @@ public class SelectParameter {
         }
     }
 
-/*    public int sortParameterSize() {
+    public int sortParameterSize() {
         return sortParameterList.size();
     }
-*/
+
     // 条件が終了した場合nullを返す
-/*    public SortParameter nextSortParameter() {
-        if (sortParameterList != null && sortParameterList.size() > 0) {
-            return sortParameterList.remove(0);
-        } else {
-            return null;
-        }
+    public List<SortParameter> getSortParameterList() {
+        return sortParameterList;
     }
-*/
 
     /**
      * Sort条件を追加
-     * sortType:1=String+asc, 2=String+desc, 3=Number+asc, 4=Number+desc
+     * sortType:1=asc, desc
+     * numberSort=true　数値ソート
      */
-/*    public void addSortParameter(String columnName, int sortType) {
+    public void addSortParameter(String columnName, int sortType, boolean numberSort) {
         if (this.sortParameterList == null) {
             this.sortParameterList = new ArrayList();
         }
-        SortParameter normalWhere = new SortParameter(columnName, sortType);
-        this.normalWhereParameterList.add(normalWhere);
-        this.normalWhereParameterListLog.add(normalWhere);
+
+        SortParameter sortParameter = new SortParameter(columnName, sortType, numberSort);
+        this.sortParameterList.add(sortParameter);
     }
-*/
 
     public String getTableString() {
         return tableName;
