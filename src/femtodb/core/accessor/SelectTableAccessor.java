@@ -8,7 +8,7 @@ import femtodb.core.table.data.*;
 import femtodb.core.table.transaction.*;
 import femtodb.core.accessor.parameter.*;
 import femtodb.core.accessor.executor.*;
-
+import femtodb.core.accessor.scripts.*;
 
 
 public class SelectTableAccessor {
@@ -30,6 +30,8 @@ public class SelectTableAccessor {
             resultList = select(selectParameter.getTableName(), transactionNo);
         }
 
+        // order by は簡易実装
+        resultList = orderBy(resultList, selectParameter);
         // Limit Offset は簡易実装
         resultList = limitOffset(resultList, selectParameter);
         return resultList;
@@ -110,6 +112,30 @@ public class SelectTableAccessor {
         }
         return allData;
     }
+
+
+
+    /**
+     * Order byは簡易実装.<br>
+     * TODO:Indexを使う予定<br>
+     * TODO:limit offset と合わせて今後修正<br>
+     */
+    private List<TableDataTransfer> orderBy(List<TableDataTransfer> resultList, SelectParameter selectParameter) {
+        try {
+            if(resultList != null && selectParameter.existSortParameter()) {
+
+                Collections.sort(resultList, new DataSortComparator(selectParameter.getSortParameterList()));
+                return resultList;
+            } else {
+                return resultList;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // orderby エラー
+            return new ArrayList();
+        }
+    }
+
 
     /**
      * Limit Offsetは簡易実装.<br>
