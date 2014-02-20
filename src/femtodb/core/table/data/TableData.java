@@ -60,13 +60,14 @@ public class TableData {
 
 
 
-    public TableDataTransfer getTableDataTransfer(TransactionNo targetTn) {
-        
+    public final TableDataTransfer getTableDataTransfer(TransactionNo targetTn) {
         readLock.lock();
         try {
+
             //System.out.println("newData.getTransactionNo().getTransactionNo()=" + newData.getTransactionNo().getTransactionNo());
             //System.out.println("targetTn.getTransactionNo()=" + targetTn.getTransactionNo());
-            if (newData.getTransactionNo().getTransactionNo() == targetTn.getTransactionNo() && newData.getTransactionNo().isRollback() == false) {
+            TransactionNo newDataTransactionNo = newData.getTransactionNo();
+            if (newDataTransactionNo.getTransactionNo() == targetTn.getTransactionNo() && newDataTransactionNo.isRollback() == false) {
                 if (newData.isDeletedData()) {
                     return null;
                 }
@@ -74,14 +75,14 @@ public class TableData {
             }
     
             
-            if (newData.getTransactionNo().isCommited() == true) {
+            if (newDataTransactionNo.isCommited() == true) {
                 if (newData.isDeletedData()) {
                     return null;
                 }
                 return newData;
             }
     
-            if (newData.getTransactionNo().isCommited() == false) {
+            if (newDataTransactionNo.isCommited() == false) {
                 if (oldData == null) return null;
                 if (oldData.isDeletedData()) {
                     return null;

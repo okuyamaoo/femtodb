@@ -18,18 +18,17 @@ public class TransactionNo {
     public TransactionNo(long transactionNo) {
         this.transactionNo = transactionNo;
         this.modTableFolder = new HashMap<String, Map<Long, TableData>>();
-
     }
 
     public long TransactionNo() {
         return this.transactionNo;
     }
 
-    public boolean isCommited() {
+    public final boolean isCommited() {
         return this.commitedFlg;
     }
 
-    public boolean isRollback() {
+    public final boolean isRollback() {
         return this.rollbackFlg;
     }
 
@@ -90,7 +89,7 @@ public class TransactionNo {
         this.modTableFolder = new HashMap<String, Map<Long, TableData>>();
     }
 
-    public long getTransactionNo() {
+    public final long getTransactionNo() {
         return transactionNo;
     }
 

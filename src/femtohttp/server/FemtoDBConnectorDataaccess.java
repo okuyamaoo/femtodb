@@ -30,6 +30,9 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
      * 必須ではないが指定可能なURLは以下<br>
      * "transactionno" : 予め取得したトランザクション番号<br>
      * "where" : 検索条　複数指定可能、複数指定し配列とする<br>
+     * 指定可能な条件は以下<br>
+     * =:左辺のカラムのデータが右辺で指定したデータと完全一致<br>
+     * like:左辺のカラムのデータ内に右辺で指定したデータが部分一致<br>
      *  例)where:column1=abc<br>
      *    where:column2=201401<br>
      * "limit" : 取得件数<br>
@@ -143,12 +146,14 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
 
             // クエリ実行
             long queryStartTime = System.nanoTime();
-            List<TableDataTransfer> resultList = FemtoHttpServer.dataAccessor.selectTableData(sp, tansactionNo);
+            ResultStruct resultStruct = FemtoHttpServer.dataAccessor.selectTableData(sp, tansactionNo);
+            List<TableDataTransfer> resultList = resultStruct.getResultList();
             long queryEndTime = System.nanoTime();
 
             // JSONデコードする前にTableDataTransferからカラムとデータだけ抜き出してそれをMapにしてJSONデコード
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("application/json; charset=utf-8");
+            response.getWriter().print("{\"count\":" + resultStruct.getBaseResultCount() + ", \"result\":");
             response.getWriter().print("[");
             // 返却用のデータへ変換
             String sep = "";
@@ -159,7 +164,7 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
                 if (idx > 0 && ((idx % 50) == 0)) response.getWriter().flush();
                 if (idx == 0) sep = ",";
             }
-            response.getWriter().print("]");
+            response.getWriter().print("]}");
             response.getWriter().flush();
             return;
         } catch (Exception e) {
@@ -287,11 +292,9 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
             e.printStackTrace();
             response.setStatus(500);
         } finally {
-            if (onceTransaction) {
-                if (tansactionNo != -1L) {
-                    FemtoHttpServer.dataAccessor.rollbackTransaction(tansactionNo);
-                    FemtoHttpServer.dataAccessor.endTransaction(tansactionNo);
-                }
+            if (onceTransaction && tansactionNo != -1L) {
+                FemtoHttpServer.dataAccessor.rollbackTransaction(tansactionNo);
+                FemtoHttpServer.dataAccessor.endTransaction(tansactionNo);
             }
         }
     }
@@ -399,10 +402,9 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
             e.printStackTrace();
             response.setStatus(500);
         } finally {
-            if (onceTransaction) {
-                if (tansactionNo != -1L) {
-                    FemtoHttpServer.dataAccessor.endTransaction(tansactionNo);
-                }
+            if (onceTransaction && tansactionNo != -1L) {
+                FemtoHttpServer.dataAccessor.rollbackTransaction(tansactionNo);
+                FemtoHttpServer.dataAccessor.endTransaction(tansactionNo);
             }
         }
     }
