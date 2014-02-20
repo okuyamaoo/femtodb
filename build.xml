@@ -6,7 +6,7 @@
 	<property name="build.dir"		value="classes" />
 	<property name="version"		value="0.0.1" />
 	<property name="lib.dir"	    value="lib"/>
-
+	<property name="javadoc.dir"	value="javadoc"/>
 	<!-- Use Project Lib  -->
 	<path id="project.class.path">
 		<pathelement path = "."/>
@@ -37,6 +37,20 @@
 		<javac debug="yes" srcdir="${src.dir}" destdir="${build.dir}" encoding="UTF-8" deprecation="true">
 			<classpath refid="project.class.path"/>
 		</javac>
+	</target>
+
+	<!-- Javadoc-->
+	<target name="javadoc" description="Javadoc">
+		<echo message="Javadoc"/>
+		<delete dir="${javadoc.dir}" />
+		<mkdir dir="${javadoc.dir}" />
+		<javadoc packagenames="*" sourcepath="${src.dir}" destdir="${javadoc.dir}" encoding="UTF-8" charset="UTF-8">
+			<classpath>
+				<fileset dir="${lib.dir}">
+					<include name="*.jar"/>
+				</fileset>
+			</classpath>
+		</javadoc>
 	</target>
 
 

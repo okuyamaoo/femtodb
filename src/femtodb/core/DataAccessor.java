@@ -30,23 +30,32 @@ public class DataAccessor {
     private ReadWriteLock logLock = new ReentrantReadWriteLock(true);
     private Lock logWriteLock = logLock.writeLock();
 
-    private boolean logWriteFlg = false;
 
     public DataAccessor() throws Exception {
+        this(null);
+    }
+
+    public DataAccessor(String[] bootArgs) throws Exception {
+        if (bootArgs != null) {
+            FemtoDBConstants.build(bootArgs);
+        }
+
         TransactionNoManager.initTransactionNoManager();
         TableManager.initOid();
         this.tableManager = new TableManager();
         
-        this.dataOperationLogManager = new DataOperationLogManager("./op.log", this);
-        logWriteFlg = true;
+        this.dataOperationLogManager = new DataOperationLogManager(FemtoDBConstants.TRANSACTION_LOG, this);
     }
 
-    public DataAccessor(long setTransactionNo, long setOid) throws Exception {
+    public DataAccessor(String[] bootArgs, long setTransactionNo, long setOid) throws Exception {
+        if (bootArgs != null) {
+            FemtoDBConstants.build(bootArgs);
+        }
+
         TransactionNoManager.initTransactionNoManager(setTransactionNo);
         TableManager.initOid(setOid);
         this.tableManager = new TableManager();
-        this.dataOperationLogManager = new DataOperationLogManager("./op.log", this);
-        logWriteFlg = true;
+        this.dataOperationLogManager = new DataOperationLogManager(FemtoDBConstants.TRANSACTION_LOG, this);
     }
 
     public TransactionNo createTransaction() {
@@ -228,17 +237,29 @@ public class DataAccessor {
         }
     }
 
-    public List<TableDataTransfer> selectTableData(SelectParameter selectParameter, long transactionNo) throws SelectException {
+    public List<TableDataTransfer> selectTableDataList(SelectParameter selectParameter, long transactionNo) throws SelectException {
+        ResultStruct resultStruct = selectTableData(selectParameter, TransactionNoManager.getTransactionNoObejct(transactionNo));
+        return resultStruct.getResultList();
+    }
+
+    public List<TableDataTransfer> selectTableDataList(SelectParameter selectParameter, TransactionNo transactionNo) throws SelectException {
+        ResultStruct resultStruct = selectTableData(selectParameter, transactionNo);
+        return resultStruct.getResultList();
+    }
+
+    public ResultStruct selectTableData(SelectParameter selectParameter, long transactionNo) throws SelectException {
         return selectTableData(selectParameter, TransactionNoManager.getTransactionNoObejct(transactionNo));
     }
 
-    public List<TableDataTransfer> selectTableData(SelectParameter selectParameter, TransactionNo transactionNo) throws SelectException {
+    public ResultStruct selectTableData(SelectParameter selectParameter, TransactionNo transactionNo) throws SelectException {
         readLock.lock();
         try {
             SelectTableAccessor selectTableAccessor = new SelectTableAccessor(this.tableManager);
             try {
-                List retList = selectTableAccessor.select(selectParameter, transactionNo);
-                return retList;
+                ResultStruct resultStruct = null;
+                resultStruct = selectTableAccessor.select(selectParameter, transactionNo);
+
+                return resultStruct;
             } catch (Exception e) {
                 throw new SelectException(e);
             }
@@ -311,8 +332,7 @@ public class DataAccessor {
 
 
     private boolean tansactionLogWrite(Object... logObjects) {
-        if (logWriteFlg) return this.dataOperationLogManager.operationLogWrite(logObjects);
-
+        if (FemtoDBConstants.TRANSACTION_LOG_WRITE) return this.dataOperationLogManager.operationLogWrite(logObjects);
         return false;
     }
 
