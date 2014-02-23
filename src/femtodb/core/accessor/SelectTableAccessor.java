@@ -97,7 +97,23 @@ System.out.println("select - all time=" + (end - start));
             normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
         }
 
-        for (; iterator.hasNext();) {
+        if (normalWhereParameter != null) {
+            normalWhereExecutor.execute(iterator, transactionNo, allData);
+        } else {
+            for (; iterator.hasNext();) {
+    
+                iterator.nextEntry();
+                TableData tableData = (TableData)iterator.getEntryValue();
+                TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
+                if (tableDataTransfer != null) {
+                
+                    allData.add(tableDataTransfer);
+                }
+            }
+
+        }
+
+/*        for (; iterator.hasNext();) {
 
             iterator.nextEntry();
             TableData tableData = (TableData)iterator.getEntryValue();
@@ -112,8 +128,9 @@ System.out.println("select - all time=" + (end - start));
                 }
             }
         }
-
+*/
         while ((normalWhereParameter = selectParameter.nextNormalWhereParameter()) != null) {
+
             normalWhereExecutor = null;
             normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
             if (allData.size() > 0) {
