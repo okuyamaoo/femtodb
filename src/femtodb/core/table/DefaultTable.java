@@ -14,6 +14,12 @@ import femtodb.core.table.index.*;
 import femtodb.core.table.type.*;
 
 
+/** 
+ * DefaultTableクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class DefaultTable extends AbstractTable implements ITable {
 
     private TableInfo tableInfo = null;

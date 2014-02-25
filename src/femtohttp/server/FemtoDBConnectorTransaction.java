@@ -17,6 +17,12 @@ import femtodb.core.table.type.*;
 import femtodb.core.accessor.*;
 import femtodb.core.accessor.parameter.*;
 
+/** 
+ * FemtoDBConnectorTransactionクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class FemtoDBConnectorTransaction  extends HttpServlet { 
 
     /** 

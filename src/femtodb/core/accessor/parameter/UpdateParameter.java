@@ -2,6 +2,12 @@ package femtodb.core.accessor.parameter;
 
 import java.util.*;
 
+/** 
+ * UpdateParameterクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class UpdateParameter extends SelectParameter {
 
     private Map<String, UpdateColumnParameter> updateParameterMap = null;

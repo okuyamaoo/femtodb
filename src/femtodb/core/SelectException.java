@@ -1,5 +1,11 @@
 package femtodb.core;
 
+/** 
+ * SelectExceptionクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class SelectException extends DBException {
 
     public SelectException(Throwable t) {

@@ -1,5 +1,11 @@
 package femtodb.core;
 
+/** 
+ * DBExceptionクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class DBException extends Exception {
     public DBException(Throwable t) {
         super(t);

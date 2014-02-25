@@ -8,6 +8,12 @@ import femtodb.core.table.transaction.*;
 import femtodb.core.table.index.*;
 
 
+/** 
+ * ITable<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public interface ITable {
 
     public String[] getIndexColumnNames();

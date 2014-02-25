@@ -4,6 +4,14 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+
+
+/** 
+ * TableManagerクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class TableManager {
 
     public static AtomicLong globalOid = null;

@@ -2,6 +2,13 @@ package femtodb.core.accessor.parameter;
 
 import java.util.*;
 
+
+/** 
+ * SelectParameterクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class SelectParameter {
 
     private String tableName = null;

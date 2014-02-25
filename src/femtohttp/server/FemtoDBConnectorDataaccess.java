@@ -20,6 +20,12 @@ import femtodb.core.accessor.*;
 import femtodb.core.accessor.parameter.*;
 
 
+/** 
+ * FemtoDBConnectorDataaccessクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet { 
 
     /** 

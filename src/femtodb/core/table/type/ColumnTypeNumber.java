@@ -1,6 +1,12 @@
 package femtodb.core.table.type;
 
 
+/** 
+ * ColumnTypeNumberクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class ColumnTypeNumber extends AbstractColumnType implements IColumnType {
 
     /**

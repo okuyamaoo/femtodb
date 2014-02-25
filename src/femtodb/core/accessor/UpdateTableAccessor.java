@@ -10,7 +10,12 @@ import femtodb.core.accessor.parameter.*;
 import femtodb.core.accessor.executor.*;
 
 
-
+/** 
+ * UpdateTableAccessorクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class UpdateTableAccessor {
 
 

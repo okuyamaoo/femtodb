@@ -4,6 +4,13 @@ import femtodb.core.table.*;
 import femtodb.core.table.data.*;
 import femtodb.core.table.transaction.*;
 
+
+/** 
+ * InsertTableAccessorクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class InsertTableAccessor {
 
 

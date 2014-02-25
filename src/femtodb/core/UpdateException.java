@@ -1,5 +1,11 @@
 package femtodb.core;
 
+/** 
+ * UpdateExceptionクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class UpdateException extends DBException {
 
     public UpdateException(Throwable t) {

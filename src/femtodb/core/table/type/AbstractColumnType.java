@@ -1,5 +1,11 @@
 package femtodb.core.table.type;
 
+/** 
+ * AbstractColumnType<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 abstract class AbstractColumnType {
 
     /**

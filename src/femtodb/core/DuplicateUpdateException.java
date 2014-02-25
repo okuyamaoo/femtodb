@@ -1,5 +1,11 @@
 package femtodb.core;
 
+/** 
+ * DuplicateUpdateExceptionクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class DuplicateUpdateException extends DBException {
 
     public DuplicateUpdateException(Throwable t) {
