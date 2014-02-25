@@ -1,5 +1,12 @@
 package femtodb.core;
 
+
+/** 
+ * DeleteExceptionクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class DeleteException extends DBException {
 
     public DeleteException(Throwable t) {

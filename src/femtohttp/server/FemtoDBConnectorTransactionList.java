@@ -20,7 +20,12 @@ import femtodb.core.accessor.*;
 import femtodb.core.accessor.parameter.*;
 
 
-
+/** 
+ * FemtoDBConnectorTransactionListクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class FemtoDBConnectorTransactionList  extends HttpServlet { 
 
     /** 

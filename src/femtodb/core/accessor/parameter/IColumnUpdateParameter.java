@@ -1,1 +1,1 @@
-package femtodb.core.accessor.parameter;public interface IColumnUpdateParameter {}
+package femtodb.core.accessor.parameter;/**  * IColumnUpdateParameterクラス<br> * * @author Takahiro Iwase * @license Apache License 2.0  */public interface IColumnUpdateParameter {}

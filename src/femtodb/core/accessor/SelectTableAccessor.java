@@ -12,6 +12,12 @@ import femtodb.core.accessor.executor.*;
 import femtodb.core.accessor.scripts.*;
 
 
+/** 
+ * SelectTableAccessorクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class SelectTableAccessor {
 
 

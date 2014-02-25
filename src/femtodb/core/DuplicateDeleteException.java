@@ -1,5 +1,12 @@
 package femtodb.core;
 
+
+/** 
+ * DuplicateDeleteExceptionクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class DuplicateDeleteException extends DBException {
 
     public DuplicateDeleteException(Throwable t) {

@@ -6,6 +6,12 @@ import java.util.*;
 import femtodb.core.table.type.*;
 import femtodb.core.*;
 
+/** 
+ * TableInfoクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class TableInfo {
 
     public String tableName = null;

@@ -1,5 +1,12 @@
 package femtodb.core.table.type;
 
+
+/** 
+ * IColumnType<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public interface IColumnType {
 
     public int VARCHAR_COLUMN = 1;

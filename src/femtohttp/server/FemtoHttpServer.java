@@ -111,7 +111,7 @@ import femtodb.core.accessor.parameter.*;
  * List[Map{"カラム名":"データ", "カラム名":"データ","カラム名":"データ"}, Map{"カラム名":"データ", "カラム名":"データ","カラム名":"データ"}....]<br>
  *
  * @author Takahiro Iwase
- * @licence Apache License 2.0 
+ * @license Apache License 2.0 
  */
 public class FemtoHttpServer {
     

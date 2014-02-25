@@ -12,6 +12,12 @@ import femtodb.core.table.*;
 import femtodb.core.table.transaction.*;
 
 
+/** 
+ * TableDataクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class TableData {
 
     private Object sync = new Object();

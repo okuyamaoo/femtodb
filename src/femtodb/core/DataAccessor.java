@@ -19,6 +19,12 @@ import femtodb.core.accessor.parameter.*;
 
 
 
+/** 
+ * DataAccessorクラス<br>
+ *
+ * @author Takahiro Iwase
+ * @license Apache License 2.0 
+ */
 public class DataAccessor {
 
     private TableManager tableManager = null;
