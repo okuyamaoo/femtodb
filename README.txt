@@ -84,5 +84,7 @@ java -server -Xmx2048m -Xms2048m  -cp ./*:./lib/* femtohttp.server.FemtoHttpServ
    最大時間をミリ秒で指定
    デフォルト:30000
 
+設定例)
+java -server -Xmx2048m -Xms2048m  -cp ./*:./lib/* femtohttp.server.FemtoHttpServer  -httpport 8088 -maxclients 300
 
 
