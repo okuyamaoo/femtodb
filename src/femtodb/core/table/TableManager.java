@@ -42,6 +42,16 @@ public class TableManager {
         return 1;
     }
 
+
+    public List<TableInfo> getTableInfoList() {
+        List<TableInfo> resultList = new ArrayList();
+        for (Iterator ite = tableInfoMap.entrySet().iterator(); ite.hasNext();) {
+            Map.Entry entry = (Map.Entry)ite.next();
+            resultList.add((TableInfo)entry.getValue());
+        }
+        return resultList;
+    }
+
     public TableInfo getTableInfo(String tableName) {
         return this.tableInfoMap.get(tableName);
     }

@@ -89,10 +89,11 @@ import femtodb.core.accessor.parameter.*;
  * &nbsp;&nbsp;where
  * &nbsp;&nbsp;&nbsp;&nbsp;検索条　複数指定可能、複数指定し配列とする<br>
  * &nbsp;&nbsp;指定可能な条件は以下<br>
- * &nbsp;&nbsp;=:左辺のカラムのデータが右辺で指定したデータと完全一致<br>
- * &nbsp;&nbsp;like:左辺のカラムのデータ内に右辺で指定したデータが部分一致<br>
- * &nbsp;&nbsp;&nbsp;&nbsp;例)where:column1=abc<br>
- * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where:column2=201401<br>
+ * &nbsp;&nbsp;"&nbsp;&nbsp;=&nbsp;&nbsp;":左辺のカラムのデータが右辺で指定したデータと完全一致<br>
+ * &nbsp;&nbsp;"&nbsp;&nbsp;index&nbsp;&nbsp;":左辺のカラムのデータ内に右辺で指定した文字列でテキスト検索<br>
+ * &nbsp;&nbsp;指定条件の"="や"text"の前後には必ず半角スペースを1つづつ入れる.<br>
+ * &nbsp;&nbsp;&nbsp;&nbsp;例)where:column1&nbsp;&nbsp;=&nbsp;&nbsp;abc<br>
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where:column2&nbsp;&nbsp;=&nbsp;&nbsp;201401<br>
  * &nbsp;&nbsp;limit<br>
  * &nbsp;&nbsp;&nbsp;&nbsp;取得件数(数値※Integerの最大値)<br>
  * &nbsp;&nbsp;offset<br>
@@ -101,9 +102,10 @@ import femtodb.core.accessor.parameter.*;
  * &nbsp;&nbsp;orderby<br>
  * &nbsp;&nbsp;&nbsp;&nbsp;ソートカラムと昇順、降順の指定。カラム名と指定を" "で連結<br>
  * &nbsp;&nbsp;&nbsp;&nbsp;並び順は辞書順である<br>
- * &nbsp;&nbsp;&nbsp;&nbsp;カラムの値が数値もしくはnullもしくは空白であることが保証出来る場合は指定の後方に"+number"と付けることで数値ソートが可能である<br>
- * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;例1)"orderby":column3 asc<br>
- * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;例2)"orderby":column4 asc number<br>
+ * &nbsp;&nbsp;&nbsp;&nbsp;カラムの値が数値もしくはnullもしくは空白であることが保証出来る場合は指定の後方に"&nbsp;&nbsp;number"と付けることで数値ソートが可能である<br>
+ * &nbsp;&nbsp;&nbsp;&nbsp;sort文に関してもカラム名と並び順指定と数値指定の間に半角スペースを1つづつ入れる.<br>
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;例1)"sort":column3&nbsp;&nbsp;asc<br>
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;例2)"sort":column4&nbsp;&nbsp;asc&nbsp;&nbsp;number<br>
  * 返却値.<br>
  * フォーマット:JSON(List<Map> リスト形式で内部要素が連想配列)<br>
  * List[Map{"カラム名":"データ", "カラム名":"データ","カラム名":"データ"}, Map{"カラム名":"データ", "カラム名":"データ","カラム名":"データ"}....]<br>
@@ -138,6 +140,7 @@ public class FemtoHttpServer {
         ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
         handler.addServletWithMapping(femtohttp.server.FemtoDBConnectorTransaction.class, "/femtodb/transaction");
+        handler.addServletWithMapping(femtohttp.server.FemtoDBConnectorTransactionList.class, "/femtodb/transactionlist");
         handler.addServletWithMapping(femtohttp.server.FemtoDBConnectorTable.class, "/femtodb/table");
         handler.addServletWithMapping(femtohttp.server.FemtoDBConnectorDataaccess.class, "/femtodb/dataaccess");
 

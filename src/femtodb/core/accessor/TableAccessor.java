@@ -1,5 +1,7 @@
 package femtodb.core.accessor;
 
+import java.util.*;
+
 import femtodb.core.table.*;
 
 
@@ -38,6 +40,11 @@ public class TableAccessor {
         table.rebuildIndex();
         return true;
     }
+
+    public List<TableInfo> getTableList() {
+        return this.tableManager.getTableInfoList();
+    }
+
     public TableInfo get(String tableName) {
         return this.tableManager.getTableInfo(tableName);
     }

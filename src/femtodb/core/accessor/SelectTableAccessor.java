@@ -3,6 +3,7 @@ package femtodb.core.accessor;
 import java.util.*;
 
 import femtodb.core.*;
+import femtodb.core.util.*;
 import femtodb.core.table.*;
 import femtodb.core.table.data.*;
 import femtodb.core.table.transaction.*;
@@ -32,7 +33,7 @@ public class SelectTableAccessor {
         }
 
         long end = System.nanoTime();
-        System.out.println("select - section1 time=" + (end - start));
+        SystemLog.println("select - section1 time=" + (end - start));
         // limit offset 前の件数
         int baseResultCount = resultList.size();
 
@@ -46,7 +47,7 @@ public class SelectTableAccessor {
             resultList = limitOffset(resultList, selectParameter);
         }
         end = System.nanoTime();
-        System.out.println("select - section2 time=" + (end - start));
+        SystemLog.println("select - section2 time=" + (end - start));
 
         // 結果のフォルダー
         ResultStruct resultStruct = new ResultStruct(baseResultCount, resultList);
@@ -62,6 +63,7 @@ public class SelectTableAccessor {
     protected List<TableDataTransfer> select(String tableName, TransactionNo transactionNo) {
         ITable table = this.tableManager.getTableData(tableName);
         List<TableDataTransfer> allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
+
 long start = System.nanoTime();
         TableIterator iterator = table.getTableDataIterator();
         for (; iterator.hasNext();) {
@@ -74,7 +76,7 @@ long start = System.nanoTime();
             }
         }
 long end = System.nanoTime();
-System.out.println("select - all time=" + (end - start));
+SystemLog.println("select - all time=" + (end - start));
         return allData;
     }
 
@@ -98,6 +100,7 @@ System.out.println("select - all time=" + (end - start));
         }
 
         if (normalWhereParameter != null) {
+
             normalWhereExecutor.execute(iterator, transactionNo, allData);
         } else {
             for (; iterator.hasNext();) {
@@ -160,24 +163,32 @@ System.out.println("select - all time=" + (end - start));
         try {
             if(resultList != null && selectParameter.existSortParameter()) {
 
-                // TODO: Limit offsetを同時に実行する
+                // Limit offsetを同時に実行する
                 DataSortComparator dataSortComparator = new DataSortComparator(selectParameter.getSortParameterList());
                 int resultListSize = resultList.size();
 
-                if (resultListSize > 10000) {
+                if (resultListSize > 1000) {
+
+                    int splitSize = 400;
+                    if (resultListSize < 5000) {
+                        splitSize = 10;
+                    } else if (resultListSize < 10000) {
+                        splitSize = 16;
+                    }
+
                     int limitOffsetSettingPattern = limitOffsetSettingPattern(selectParameter);
                     int[] limitOffsetIndexs = createLimitOffsetPosition(limitOffsetSettingPattern, resultListSize, selectParameter);
 
                     List<SortParameter> list = selectParameter.getSortParameterList();
                     SortParameter firstSortParameter = list.get(0);
-                    int preSortListSize = resultListSize / 400;
+                    int preSortListSize = resultListSize / splitSize;
                     int samplePointBase = resultListSize / preSortListSize;
 
                     TreeMap preSortMap = new TreeMap();
 
                     List tailList = new ArrayList(1000);
                     List nullDataList = new ArrayList(1000);
-long start1 = System.nanoTime();
+                    long start1 = System.nanoTime();
                     for (int i = 0; i < preSortListSize; i++) {
                         String colVar = resultList.get(samplePointBase*i).getColumnData(firstSortParameter.columnName);
                         if (colVar != null) {
@@ -189,9 +200,9 @@ long start1 = System.nanoTime();
                         }
                     }
 
-long end1 = System.nanoTime();
-System.out.println("time1=" + (end1 - start1) + " preSortMapSIze=" + preSortMap.size());
-long start2 = System.nanoTime();
+                    //long end1 = System.nanoTime();
+                    //SystemLog.println("time1=" + (end1 - start1) + " preSortMapSIze=" + preSortMap.size());
+                    //long start2 = System.nanoTime();
                     for (TableDataTransfer tableDataTransfer:resultList) {
                         String colVar = tableDataTransfer.getColumnData(firstSortParameter.columnName);
 
@@ -217,10 +228,10 @@ long start2 = System.nanoTime();
                             nullDataList.add(tableDataTransfer);
                         }
                     }
-long end2 = System.nanoTime();
-System.out.println("time2=" + (end2 - start2));
+                    //long end2 = System.nanoTime();
+                    //SystemLog.println("time2=" + (end2 - start2));
 
-long start3 = System.nanoTime();
+                    //long start3 = System.nanoTime();
 
                     resultList = new ArrayList(resultListSize);
                     int totalSortTargetCnt = 0;
@@ -252,7 +263,7 @@ long start3 = System.nanoTime();
                                 }
                             }
 
-                            //System.out.println(preSortGroup.size() + "=" +  dataSortComparator);
+                            //SystemLog.println(preSortGroup.size() + "=" +  dataSortComparator);
                             resultList.addAll(preSortGroup);
                         }
 
@@ -260,9 +271,9 @@ long start3 = System.nanoTime();
                         resultList.addAll(tailList);
 
                         Collections.sort(nullDataList, dataSortComparator);
-                        //System.out.println(dataSortComparator);
+                        //SystemLog.println(dataSortComparator);
                         resultList.addAll(nullDataList);
-                        //System.out.println("resultList.size()=" +resultList.size());
+                        //SystemLog.println("resultList.size()=" +resultList.size());
                     } else {
                         // desc
                         // 振り分けが大きいものをまず投入
@@ -293,7 +304,7 @@ long start3 = System.nanoTime();
                                 }
                             }
 
-                            //System.out.println(preSortGroup.size() + "=" +  dataSortComparator);
+                            //SystemLog.println(preSortGroup.size() + "=" +  dataSortComparator);
                             resultList.addAll(preSortGroup);
                         }
 
@@ -301,15 +312,15 @@ long start3 = System.nanoTime();
                         Collections.sort(nullDataList, dataSortComparator);
                         resultList.addAll(nullDataList);
                     }
-long end3 = System.nanoTime();
-System.out.println("time3=" + (end3 - start3));
+                    //long end3 = System.nanoTime();
+                    //SystemLog.println("time3=" + (end3 - start3));
 
                 } else {
                     Collections.sort(resultList, dataSortComparator);
                 }
 
                 
-                System.out.println(dataSortComparator);
+                //SystemLog.println(dataSortComparator);
                 return limitOffset(resultList, selectParameter);
             } else {
                 if (resultList.size() > 0) {

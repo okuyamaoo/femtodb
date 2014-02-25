@@ -7,9 +7,12 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import femtodb.core.table.data.*;
+import femtodb.core.util.*;
 import femtodb.core.table.transaction.*;
 import femtodb.core.accessor.parameter.*;
 import femtodb.core.table.index.*;
+import femtodb.core.table.type.*;
+
 
 public class DefaultTable extends AbstractTable implements ITable {
 
@@ -37,7 +40,17 @@ public class DefaultTable extends AbstractTable implements ITable {
 
         if (indexColumnNames != null && indexColumnNames.length > 0) {
             for (int idx = 0; idx < indexColumnNames.length; idx++) {
-                this.indexsMap.put(indexColumnNames[idx], new IndexMap(indexColumnNames[idx], new CharacterIndexComparator(), dataMap));
+
+                if (this.tableInfo.getColumnType(indexColumnNames[idx]).getType() == IColumnType.VARCHAR_COLUMN) { 
+                    // FullMatch用Index
+                    this.indexsMap.put(indexColumnNames[idx], new FullMatchIndexMap(indexColumnNames[idx], new CharacterIndexComparator(), dataMap));
+                } else if (this.tableInfo.getColumnType(indexColumnNames[idx]).getType() == IColumnType.NUMBER_COLUMN) {
+                    // NumberRange用Index
+                    this.indexsMap.put(indexColumnNames[idx], new NumberRangeIndexMap(indexColumnNames[idx], new NumberIndexComparator(), dataMap));
+                } else if (this.tableInfo.getColumnType(indexColumnNames[idx]).getType() == IColumnType.TEXT_COLUMN) {
+                    // TextSearch用Index
+                    this.indexsMap.put(indexColumnNames[idx], new TextMatchIndexMap(indexColumnNames[idx], new CharacterIndexComparator(), dataMap));
+                }
             }
         }
 
@@ -85,10 +98,10 @@ public class DefaultTable extends AbstractTable implements ITable {
      *
      */
     public boolean removeTmpData(long oid) {
-//        System.out.println(oid);
-//        System.out.println("remove befor size=" + this.dataMap.size());
+//        SystemLog.println(oid);
+//        SystemLogprintln("remove befor size=" + this.dataMap.size());
         this.dataMap.remove(oid);
-//        System.out.println("remove after size=" + this.dataMap.size());
+//        SystemLog.println("remove after size=" + this.dataMap.size());
         return true;
     }
 
@@ -117,8 +130,13 @@ public class DefaultTable extends AbstractTable implements ITable {
             IWhereParameter indexParameter = indexWhereParameter.getParameter();
 
             IndexMap indexMap = this.indexsMap.get(indexColumnName);
-            TableIterator tableIterator = new IndexTableIterator(getTableName(), tn, indexMap, indexColumnName, indexParameter.toString());
-            return tableIterator;
+            if (indexMap == null) {
+                TableIterator tableIterator = new DefaultTableIterator(this.dataMap.entrySet().iterator());
+                return tableIterator;
+            } else {
+                TableIterator tableIterator = new IndexTableIterator(getTableName(), tn, indexMap, indexColumnName, indexParameter.toString());
+                return tableIterator;
+            }
         } else {
             TableIterator tableIterator = new DefaultTableIterator(this.dataMap.entrySet().iterator());
             return tableIterator;
