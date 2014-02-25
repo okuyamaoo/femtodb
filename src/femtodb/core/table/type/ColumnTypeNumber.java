@@ -12,6 +12,11 @@ public class ColumnTypeNumber extends AbstractColumnType implements IColumnType 
         return 2;
     }
 
+    public String getTypeString() {
+        return "number";
+    }
+
+
     public String toString(){
         return "Number type";
     }

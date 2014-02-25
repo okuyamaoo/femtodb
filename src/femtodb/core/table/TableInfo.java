@@ -25,8 +25,11 @@ public class TableInfo {
         this.infomationMap.put(columnName, columnType);
     }
 
-    public boolean existColumn(String columnName) {
-        return this.infomationMap.containsKey(columnName);
+    public boolean existColumn(String columnName, IColumnType columnType) {
+        if (!this.infomationMap.containsKey(columnName)) return false;
+        IColumnType targetColumnType = this.infomationMap.get(columnName);
+        if (targetColumnType.getType() == columnType.getType()) return true;
+        return false;
     }
 
     public IColumnType getColumnType(String columnName) {
@@ -70,6 +73,8 @@ public class TableInfo {
                         infomationMap.put(logString[i], new ColumnTypeNumber());
                     } else if (logString[i+1].equals("Varchar type")) {
                         infomationMap.put(logString[i], new ColumnTypeVarchar());
+                    } else if (logString[i+1].equals("Text type")) {
+                        infomationMap.put(logString[i], new ColumnTypeText());
                     }
                 }
             }
@@ -80,7 +85,7 @@ public class TableInfo {
         StringBuilder strBuf = new StringBuilder();
         strBuf.append("TableName:" + tableName);
         strBuf.append("\n");
-        strBuf.append("Column:"+infomationMap);
+        strBuf.append("IndexColumn:"+infomationMap);
         return strBuf.toString();
     }
 }

@@ -13,6 +13,8 @@ public class TransactionNo {
 
     private long transactionNo = -1L;
 
+    private Date createDate = new Date();
+
     public Map<String, Map<Long, TableData>> modTableFolder = null;
 
     public TransactionNo(long transactionNo) {
@@ -22,6 +24,10 @@ public class TransactionNo {
 
     public long TransactionNo() {
         return this.transactionNo;
+    }
+
+    public final String getDateString() {
+        return createDate.toString();
     }
 
     public final boolean isCommited() {

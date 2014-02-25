@@ -1,0 +1,344 @@
+HTTPでの利用方法一覧
+ FemtoDBはhttpサーバとして起動し、HTTPにて全てのデータ操作が可能です。
+ ここでは全てのHTTP操作を説明します。基本的にHTTPのURIとMethodにより操作を指定しパラメータで詳細な条件等を指定します。
+ 条件には必須パラメータと任意パラメータがあります。
+ トランザクションも実現可能です。利用方法としては予めトランザクション番号を発行し、そこで発行した番号を利用してデータ操作を
+ 行うことで実現出来ます。
+ 
+-- メソッド一覧 --
+
+[テーブルを作成]
+　メソッド：POST
+　URL    :/femtodb/table
+　パラメータ
+　------------
+　[必須パラメータ]
+　   パラメータ1.説明：テーブル名を指定
+　     Key名="table"
+　     Value=テーブル名
+　   パラメータ1.例) table=table1
+　------------
+　[任意パラメータ]
+　   パラメータ2.説明：検索用インデックスを作成するカラム名とインデックスのタイプ(完全一致用Indexの"equal"とテキスト検索用の"text")を指定。複数指定する場合はカンマ区切りで指定。
+　   パラメータ2.Key名="indexcolumns"
+　   パラメータ2.Value=カラム名:インデックスタイプ
+　   パラメータ2.例) indexcolumns=userid:equal,address:text
+　------------
+　
+　[返却値]：実行結果/JSON形式
+
+＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
+[テーブル一覧を取得]
+　メソッド：GET
+　URL    :/femtodb/table
+　パラメータ:なし
+　[返却値]：テーブル一覧/JSON形式
+ 
+＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+ 
+[トランザクションNo取得]
+　メソッド：GET
+　URL    :/femtodb/transaction
+　パラメータ:なし
+　[返却値]：TransactionNo/JSON形式
+
+＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
+[トランザクションのCommit、Rollbackを実行]
+　メソッド：POST
+　URL    :/femtodb/transaction
+　パラメータ
+　------------
+　[必須パラメータ]
+　   パラメータ1.説明：トランザクションNoを指定
+　     Key名="transactionno"
+　     Value=取得し利用したTransactionNo
+　   パラメータ1.例) transactionno=4
+　------------
+　   パラメータ2.説明：実行命令
+　     Key名="method"
+　     Value=commit or rollback
+　   パラメータ1.例) method=commit
+　------------
+　[返却値]：実行結果/JSON形式
+　[備考]：本処理を実行したTransactioNoは再利用出来ない。処理を続行する場合TransactionNoを新た取得して行う
+
+＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
+[現在有効なトランザクションNoの一覧を取得]
+　メソッド：GET
+　URL    :/femtodb/transactionlist
+　パラメータ:なし
+　[返却値]：TransactionNoの一覧/JSON形式
+
+＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
+[テーブルにデータを登録]
+　メソッド：POST
+　URL    :/femtodb/dataaccess
+　パラメータ
+　------------
+　[必須パラメータ]
+　   パラメータ1.説明：登録先テーブル名を指定
+　     Key名="table"
+　     Value=テーブル名
+　   パラメータ1.例) table=tbl
+　------
+　   パラメータ2.説明：登録データ
+　     Key名="data"
+　     Value=JSON形式のデータ(Key=Value型)
+　   パラメータ2.例1) data={"key1":"key1-value", "key2":"key2-value"}
+　   パラメータ2.[備考]：カラム名や数に関しては統一出来ている必要はない。どのようなパターンでも登録可能であり、透過的に取得検索が可能である
+　    ->このようなデータが登録出来る。data={"key1":"key1-value", "key2":"key2-value"}&{"key997":"key997-value", "key998":"key998-value", "key999":"key999-value"}
+　------------
+　[任意パラメータ]
+　   パラメータ3.説明：トランザクションを利用して登録を行う場合予め取得したトランザクションNoを指定
+　     Key名="transactionno"
+　     Value=事前に取得しておいたTransactionNo
+　   パラメータ3.例) transactionno=4
+　------------
+　[返却値]：登録結果件数/JSON形式
+　[備考]：1.TransactionNoを指定した場合、当該トランザクションがcommitされるまで登録時に指定したTransactionNoを指定したリクエスト以外はデータを取得することは出来ない。
+　       commitを行うことで全ての取得リクエストで取得出来るようになる。
+　       またトランザクションをrollbackすることで登録を無効に出来る。
+　     2.複数件を一度に登録する場合は"data"パラメータ要素を複数個指定する
+　       例) ?table=tbl&data={"key1":"key1-value", "key2":"key2-value"}&data={"key1":"key1-2-value", "key2":"key2-2-value"}
+
+＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
+[テーブルのデータを取得/検索]
+　メソッド：GET
+　URL    :/femtodb/dataaccess
+　パラメータ
+　------------
+　[必須パラメータ]
+　   パラメータ1.説明：取得先テーブル名を指定
+　     Key名="table"
+　     Value=テーブル名
+　   パラメータ1.例) table=tbl
+　
+　------------
+　[任意パラメータ]
+　   パラメータ2.説明：トランザクション内での取得/検索を行う場合のトランザクションNo
+　     Key名="transactionno"
+　     Value=事前に取得しておいたTransactionNo
+　   パラメータ2.例) transactionno=12
+　------
+　   パラメータ3.説明：取得検索条件
+　     Key名="where"
+　     Value=検索条件。フォーマットは条件対象を適応する"カラム名" " 条件 " "条件用パラメータ"となる
+　           以下の条件が指定可能
+　           [ = ]:左辺のカラムのデータが右辺で指定したデータと完全一致
+　           [ text ]:左辺のカラムのデータが右辺で指定したデータと完全一致
+　           [ > ]:左辺のカラムのデータ内に右辺で指定した値よりも大きい値に一致
+　           [ < ]:左辺のカラムのデータ内に右辺で指定した値よりも小さい値に一致
+　           ※備考
+　           ・"="と"text"に関してはテーブル作成時にインデックスを作成していた場合高速に検索が可能である
+　           ・インデックスを作成している、していないに関係なく登録した全てのカラムに検索が可能である
+　           ・インデックス作成したカラムにインデックス利用可能条件が指定された場合自動的にインデックスが利用される
+　           ・複数指定する場合whereを複数指定する。全てAndとして実行される
+　           ・存在しないカラムを指定した場合、該当データは取得対象とならない
+　           ・条件指定の前後には半角スペースを入れる
+　           ※現在インデックス作成可能な条件は"=" or "text"のみである
+　
+　   パラメータ3.例) where=memo text XXX&where=flg = 1&where=price < 10000
+　------
+　   パラメータ4.説明：並び替え条件。辞書順もしくは数値としてカラムの値を用いて結果をソートする
+　     Key名="sort"
+　     Value=並び替えものととなるカラム名 並び順 数値指定
+　           以下それぞれの説明
+　            [並び替えカラム名]：指定したカラム名の値を用いて並び替える
+　            [並び順]：asc もしくは descを指定
+　            [数値指定]：numberと指定することで数値として並び替える。該当カラムが数値ではない場合は後端に移動される
+　           ※備考
+　            ・複数指定する場合は","にて連結し指定する。
+　
+　   パラメータ4.例1) sort=sort=key1 desc
+　   パラメータ4.例2) sort=sort=price asc number,key1 desc
+　------
+　   パラメータ5.説明：取得件数
+　     Key名="limit"
+　     Value=データ取得件数を数値で指定する。本条件は検索条件が適応され並び替えが実施されたデータに対して適応される
+　   パラメータ5.例1) limit=10
+　------
+　   パラメータ6.説明：取得開始位置
+　     Key名="offset"
+　     Value=データ取得開始位置を数値で指定する。本条件は検索条件が適応され並び替えが実施されたデータに対して適応される。取得開始位置の始点は1となる
+　   パラメータ6.例1) offset=10
+　   パラメータ6.例1) offset=10&limit=10
+　                  ※limitと組み合わせることでoffset指定位置からlimitで指定した件数だけ取得可能
+　------------
+　[返却値]：取得件数の総件数とデータ部分のリスト/JSON形式
+　[備考]：TransactionNoを指定した場合、当該トランザクションで登録、更新、削除したデータをcommit前での反映して取得可能である
+
+＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
+[テーブルのデータを更新する]
+　メソッド：PUT
+　URL    :/femtodb/dataaccess
+　パラメータ
+　------------
+　[必須パラメータ]
+　   パラメータ1.説明：更新先テーブル名を指定
+　     Key名="table"
+　     Value=テーブル名
+　   パラメータ1.例) table=tbl
+　------
+　   パラメータ2.説明：更新データ。更新したいデータのみを指定
+　     Key名="data"
+　     Value=JSON形式のデータ(Key=Value型。複数カラム指定可)
+　   パラメータ2.例1) data={"price":"9999", "deleteflg":"0"}
+　   パラメータ2.[備考]：登録済みデータに存在しないカラムを更新データとして指定した場合、指定したカラムが既存のデータに追加されて更新される
+　
+　------------
+　[任意パラメータ]
+　   パラメータ3.説明：トランザクションを利用して更新を行う場合予め取得したトランザクションNoを指定。指定しない場合更新が即座に反映される
+　     Key名="transactionno"
+　     Value=事前に取得しておいたTransactionNo
+　   パラメータ3.例) transactionno=4
+　------
+　   パラメータ4.説明：更新対象を絞り込む検索条件。ここで指定された条件の対象データのみ更新される。※[テーブルのデータを取得/検索]と全く同じため省略
+　
+　------------
+　[返却値]：更新結果件数/JSON形式
+　[備考]：1.TransactionNoを指定した場合、当該トランザクションがcommitされるまで更新データは同様のTransactionNoを指定したリクエスト以外は更新前データを参照することとなる
+　         commitを行うことで全ての取得リクエストに反映される。
+　         またトランザクションをrollbackすることで更新を無効に出来る。
+　       2.任意パラメータである"where"を指定しない場合テーブル内の全てのデータが更新対象となる
+
+＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
+[テーブルのデータを削除する]
+　メソッド：DELETE
+　URL    :/femtodb/dataaccess
+　パラメータ
+　------------
+　[必須パラメータ]
+　   パラメータ1.説明：削除先テーブル名を指定
+　     Key名="table"
+　     Value=テーブル名
+　   パラメータ1.例) table=tbl
+　
+　------------
+　[任意パラメータ]
+　   パラメータ2.説明：トランザクションを利用して削除を行う場合予め取得したトランザクションNoを指定。指定しない場合更新が即座に反映される
+　     Key名="transactionno"
+　     Value=事前に取得しておいたTransactionNo
+　   パラメータ2.例) transactionno=4
+　------
+　   パラメータ3.説明：削除対象を絞り込む検索条件。ここで指定された条件の対象データのみ削除される。
+　     Key名="where"
+　     Value=※[テーブルのデータを取得/検索]と全く同じため省略
+　
+　------------
+　[返却値]：削除結果件数/JSON形式
+　[備考]：1.TransactionNoを指定した場合、当該トランザクションがcommitされるまで削除データは同様のTransactionNoを指定したリクエスト以外は削除前データを参照することとなる
+　         commitを行うことで全ての取得リクエストに反映される。
+　         またトランザクションをrollbackすることで削除を無効に出来る。
+
+
+＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+以下に簡単な例を示します。
+※FemtoDBはローカルで8080ポートにて起動しているものとします。
+※curlが使えるものとします。
+
+[1].テーブル「item」を作成 (インデックスも作成)
+#テーブル作成
+$curl "http://localhost:8080/femtodb/table?table=item&indexcolumns=itemcd:equal" -X POST
+{"result":"true"}
+
+
+[2].トランザクションの開始からデータ登録、取得、コミットまで
+#トランザクション開始
+$curl "http://localhost:8080/femtodb/transaction" -X GET
+{"transactionno":60}
+
+#データ登録(2件)
+$curl http://localhost:8080/femtodb/dataaccess -X POST \
+-d "transactionno=60" \
+-d "table=item" \
+-d "data={\"itemcd\":\"item0001\", \"name\":\"白いシャツ\", \"price\":\"3000\"}" \
+-d "data={\"itemcd\":\"item0002\", \"name\":\"白い帽子\", \"price\":\"4500\"}"
+{"result":2}
+
+#データ取得
+$curl "http://localhost:8080/femtodb/dataaccess?transactionno=60&table=item" -X GET
+{
+ count: 2,
+ result: [
+  {
+   itemcd: "item0002",
+   name: "白い帽子",
+   price: "4500"
+  },
+  {
+   itemcd: "item0001",
+   name: "白いシャツ",
+   price: "3000"
+  }
+ ]
+}
+
+#コミット
+$curl http://localhost:8080/femtodb/transaction -X POST -d "transactionno=60" -d "method=commit"
+{"result":"true"}
+
+
+[3].トランザクションの開始からデータ更新、取得、コミットまで
+#トランザクション開始
+$curl "http://localhost:8080/femtodb/transaction" -X GET
+{"transactionno":63}
+
+#データ更新
+$curl http://localhost:8080/femtodb/dataaccess -X PUT \
+-d "transactionno=63" \
+-d "table=item" \
+-d "data={\"price\":\"6000\"}" \
+-d "where=itemcd = item0001"
+{"result":1}
+
+#データ取得
+$curl "http://localhost:8080/femtodb/dataaccess?transactionno=63&table=item&where=itemcd = item0001" -X GET
+{
+ count: 1,
+ result: [
+  {
+   itemcd: "item0001",
+   name: "白いシャツ",
+   price: "6000"
+  }
+ ]
+}
+
+#コミット
+$curl http://localhost:8080/femtodb/transaction -X POST -d "transactionno=63" -d "method=commit"
+{"result":"true"}
+
+
+[4].トランザクションの開始からデータ削除、取得、コミットまで
+#トランザクション開始
+$curl "http://localhost:8080/femtodb/transaction" -X GET
+{"transactionno":64}
+
+#データ削除
+$curl "http://localhost:8080/femtodb/dataaccess?transactionno=64&table=item&where=itemcd%20=%20item0001" -X DELETE
+{"result":1}
+
+#データ取得
+$curl "http://localhost:8080/femtodb/dataaccess?transactionno=64&table=item&where=itemcd%20=%20item0001" -X GET
+{
+ count: 1,
+ result: [
+  {
+   itemcd: "item0002",
+   name: "白い帽子",
+   price: "4500"
+  }
+ ]
+}
+
+#コミット
+$curl http://localhost:8080/femtodb/transaction -X POST -d "transactionno=64" -d "method=commit"
+{"result":"true"}
+

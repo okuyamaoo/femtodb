@@ -7,6 +7,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import femtodb.core.*;
+import femtodb.core.util.*;
 import femtodb.core.table.*;
 import femtodb.core.table.transaction.*;
 
@@ -64,8 +65,8 @@ public class TableData {
         readLock.lock();
         try {
 
-            //System.out.println("newData.getTransactionNo().getTransactionNo()=" + newData.getTransactionNo().getTransactionNo());
-            //System.out.println("targetTn.getTransactionNo()=" + targetTn.getTransactionNo());
+            //SystemLog.println("newData.getTransactionNo().getTransactionNo()=" + newData.getTransactionNo().getTransactionNo());
+            //SystemLog.println("targetTn.getTransactionNo()=" + targetTn.getTransactionNo());
             TransactionNo newDataTransactionNo = newData.getTransactionNo();
             if (newDataTransactionNo.getTransactionNo() == targetTn.getTransactionNo() && newDataTransactionNo.isRollback() == false) {
                 if (newData.isDeletedData()) {

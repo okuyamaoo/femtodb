@@ -20,7 +20,7 @@ import femtodb.core.accessor.parameter.*;
 public class FemtoDBConnectorTransaction  extends HttpServlet { 
 
     /** 
-     * トランザクションを新規で作成する.<br>
+     * トランザクションを新規で作成する、もしくは現在のTransactionの一覧を返す.<br>
      * 返却値としてTransaction番号が返される.<br>
      * 本リクエストはパラメータを必要としない.<br>
      * 返却値はJSONフォーマットで{"transactionno":1}となり左辺の数値Long値であり可変となる<br>
@@ -32,7 +32,7 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
      * @throws IOException
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
+        
         TransactionNo tn = FemtoHttpServer.dataAccessor.createTransaction();
         long transactionNo = tn.getTransactionNo();
         StringBuilder strBuf = new StringBuilder();
@@ -47,6 +47,7 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
     /** 
      * トランザクションをCommitもしくはRollbackする.<br>
      * 返却値として成否が返される.<br>
+     * 一度Commit、Rollbackを実行したTransactionNoは無効となる<br>
      * 本リクエストはパラメータとして以下を必要とする.<br>
      * "transactionno" 対象とするトランザクションの番号 <br>
      * "method" "commit"及び、"rollback"を指定<br>
@@ -67,27 +68,43 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
         try {
             transactioNoLong = new Long(transactionNo).longValue();
         } catch (Exception e2) {
-            StringBuilder strBuf = new StringBuilder();
-            strBuf.append("{\"result\":\"");
-            strBuf.append("false");
-            strBuf.append("\"}");
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType("application/json; charset=utf-8");
-            response.getWriter().println(strBuf.toString());
+            response.setStatus(400);
+            response.setContentType("text/html; charset=utf-8");
+            response.getWriter().println("'transactionno' Format violation.");
             return;
         }
 
         String method = request.getParameter("method");
+        if (method == null || method.trim().equals("")) {
+            response.setStatus(400);
+            response.setContentType("text/html; charset=utf-8");
+            response.getWriter().println("'method' Not found.");
+            return;
+        }
+
+        if (!FemtoHttpServer.dataAccessor.existsTransactionNo(transactioNoLong)) {
+            response.setContentType("text/html");
+            response.setStatus(400);
+            response.getWriter().println("The 'transactionno'  specified does not exist");
+            return;
+        }
+
         boolean result = false;
 
-        if (method.equals("commit")) {
+        if (method.trim().equals("commit")) {
             // commit処理
             result = FemtoHttpServer.dataAccessor.commitTransaction(transactioNoLong);
-        } else if (method.equals("rollback")) {
+        } else if (method.trim().equals("rollback")) {
             // rollback処理
             result = FemtoHttpServer.dataAccessor.rollbackTransaction(transactioNoLong);
+        } else {
+            response.setStatus(400);
+            response.setContentType("text/html; charset=utf-8");
+            response.getWriter().println("'method' Format violation.");
+            return;
         }
-        
+        FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
+
         StringBuilder strBuf = new StringBuilder();
         strBuf.append("{\"result\":\"");
         strBuf.append(result);
@@ -99,6 +116,7 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
 
 
     /** 
+     * 利用禁止.<br>
      * トランザクションを終了する.<br>
      * 返却値として成否が返される.<br>
      * 本リクエストはパラメータとして以下を必要とする.<br>
@@ -114,7 +132,18 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
      * @throws IOException
      */
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
+        if (true) {
+            // 使用禁止
+            StringBuilder strBuf = new StringBuilder();
+            strBuf.append("{\"result\":\"");
+            strBuf.append("false");
+            strBuf.append("\"}");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("application/json; charset=utf-8");
+            response.getWriter().println(strBuf.toString());
+            return;
+        }
+        
         String transactionNo = request.getParameter("transactionno");
         long transactioNoLong = -1L;
         try {
