@@ -55,7 +55,7 @@ MVCCモデルを参考したトランザクションが実装されており、�
  kuromoji(Version-0.7.7)  http://www.atilika.org/
 jsonic(Version-01.3.1) http://jsonic.sourceforge.jp/
 jetty(Version-9.1.1) http://www.eclipse.org/jetty/
-※上記は全て同根しています。
+※上記は全て同梱しています。
 
 
 [起動]
