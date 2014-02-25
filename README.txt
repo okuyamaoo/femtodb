@@ -55,5 +55,34 @@ java -server -Xmx2048m -Xms2048m  -cp ./*:./lib/* femtohttp.server.FemtoHttpServ
 起動後ポート番号8080にてアクセス可能
 詳しい利用方法はFemtoDB-HTTPMethod-List.txtを参照してください
 
+[起動引数(オプション)]
+"-項目名 値"のフォーマットで指定
+
+・永続化ログの出力要非
+  -tlw true/false
+   "true"出力する
+   "false"出力しない
+   デフォルト:true
+
+・永続化ログの出力ファイル名
+  -tl ./femtodb.log
+   ファイル名をフルパスもしくは相対パスで指定
+   デフォルト:./femtodb.log
+
+・FemtoDBのHTTPサーバの起動ポート
+  -httpport 8080
+   ポート番号を指定
+   デフォルト:8080
+
+・FemtoDBのHTTPサーバ同時接続最大数
+  -maxclients 300
+   最大数数値で指定
+   デフォルト:150
+
+・FemtoDBの応答タイムアウト時間
+  -timeout 30000
+   最大時間をミリ秒で指定
+   デフォルト:30000
+
 
 
