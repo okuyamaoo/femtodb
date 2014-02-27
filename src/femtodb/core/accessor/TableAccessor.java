@@ -55,4 +55,12 @@ public class TableAccessor {
         return this.tableManager.getTableInfo(tableName);
     }
 
+    public TableInfo remove(String tableName) {
+        TableInfo tableInfo = this.tableManager.removeTableInfo(tableName);
+        if (tableInfo == null) return null;
+        
+        ITable table = this.tableManager.removeTableData(tableName);
+        return tableInfo;
+    }
+
 }

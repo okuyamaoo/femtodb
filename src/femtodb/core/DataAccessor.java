@@ -178,6 +178,16 @@ public class DataAccessor {
     }
 
 
+    public TableInfo removeTable(String tableName) {
+        TableAccessor tableAccessor = new TableAccessor(this.tableManager);
+        TableInfo tableInfo = tableAccessor.remove(tableName);
+        if (tableInfo == null) return null;
+        tansactionLogWrite(new Integer(99), tableName);
+        return tableInfo;
+    }
+
+
+
     public boolean rebuildIndex(String tableName) {
 
         TableAccessor tableAccessor = new TableAccessor(this.tableManager);

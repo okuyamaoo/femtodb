@@ -1,6 +1,8 @@
 package femtodb.core.accessor;
 
+
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import femtodb.core.*;
 import femtodb.core.util.*;
@@ -29,32 +31,42 @@ public class SelectTableAccessor {
 
     public ResultStruct select(SelectParameter selectParameter, TransactionNo transactionNo) {
         List resultList = null;
-        long start = System.nanoTime();
-        if (selectParameter.existNormalWhereParameter() || selectParameter.existIndexWhereParameter()) {
+        int baseResultCount = 0;
 
-            resultList = select(selectParameter.getTableName(), selectParameter, transactionNo);
-        } else {
-            // 全件取得
-            resultList = select(selectParameter.getTableName(), transactionNo);
+        Object syncObj = QueryOptimizer.getParallelsSyncObject(selectParameter);
+
+        synchronized(syncObj) {
+
+            long sec1Start = System.nanoTime();
+
+            if (selectParameter.existNormalWhereParameter() || selectParameter.existIndexWhereParameter()) {
+                // 検索条件有り
+                resultList = select(selectParameter.getTableName(), selectParameter, transactionNo);
+            } else {
+            
+                // 全件取得
+                resultList = select(selectParameter.getTableName(), transactionNo);
+            }
+    
+            long sec1End = System.nanoTime();
+            SystemLog.println("select - section1 time=" + (sec1End - sec1Start));
+
+    
+            // limit offset 前の件数
+            baseResultCount = resultList.size();
+    
+            long sec2Start = System.nanoTime();
+            // order by は簡易実装
+            if (selectParameter.existSortParameter()) {
+                resultList = orderBy(resultList, selectParameter);
+                //resultList = limitOffset(resultList, selectParameter);
+            } else {
+                // Limit Offset は簡易実装
+                resultList = limitOffset(resultList, selectParameter);
+            }
+            long sec2End = System.nanoTime();
+            SystemLog.println("select - section2 time=" + (sec2End - sec2Start));
         }
-
-        long end = System.nanoTime();
-        SystemLog.println("select - section1 time=" + (end - start));
-        // limit offset 前の件数
-        int baseResultCount = resultList.size();
-
-        start = System.nanoTime();
-        // order by は簡易実装
-        if (selectParameter.existSortParameter()) {
-            resultList = orderBy(resultList, selectParameter);
-            //resultList = limitOffset(resultList, selectParameter);
-        } else {
-            // Limit Offset は簡易実装
-            resultList = limitOffset(resultList, selectParameter);
-        }
-        end = System.nanoTime();
-        SystemLog.println("select - section2 time=" + (end - start));
-
         // 結果のフォルダー
         ResultStruct resultStruct = new ResultStruct(baseResultCount, resultList);
 
@@ -70,7 +82,7 @@ public class SelectTableAccessor {
         ITable table = this.tableManager.getTableData(tableName);
         List<TableDataTransfer> allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
 
-long start = System.nanoTime();
+        long start = System.nanoTime();
         TableIterator iterator = table.getTableDataIterator();
         for (; iterator.hasNext();) {
 
@@ -81,8 +93,9 @@ long start = System.nanoTime();
                 allData.add(tableDataTransfer);
             }
         }
-long end = System.nanoTime();
-SystemLog.println("select - all time=" + (end - start));
+        long end = System.nanoTime();
+        SystemLog.println("select - all time=" + (end - start));
+
         return allData;
     }
 
@@ -122,29 +135,13 @@ SystemLog.println("select - all time=" + (end - start));
 
         }
 
-/*        for (; iterator.hasNext();) {
-
-            iterator.nextEntry();
-            TableData tableData = (TableData)iterator.getEntryValue();
-            TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
-            if (tableDataTransfer != null) {
-                if (normalWhereParameter != null) {
-                    if (normalWhereExecutor.execute(tableDataTransfer)) {
-                        allData.add(tableDataTransfer);
-                    }
-                } else {
-                    allData.add(tableDataTransfer);
-                }
-            }
-        }
-*/
         while ((normalWhereParameter = selectParameter.nextNormalWhereParameter()) != null) {
 
             normalWhereExecutor = null;
             normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
             if (allData.size() > 0) {
                 int size = allData.size();
-                List<TableDataTransfer> tmpAllData = new ArrayList<TableDataTransfer>(size);
+                List<TableDataTransfer> tmpAllData = new ArrayList(size);
 
                 for (TableDataTransfer targetTableDataTransfer:allData) {
 
@@ -416,4 +413,6 @@ SystemLog.println("select - all time=" + (end - start));
        }
         return ret;
     }
+
+
 }

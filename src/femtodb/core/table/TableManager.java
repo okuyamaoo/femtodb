@@ -67,4 +67,14 @@ public class TableManager {
     public ITable getTableData(String tableName) {
         return this.tableDataMap.get(tableName);
     }
+
+    public TableInfo removeTableInfo(String tableName) {
+        return this.tableInfoMap.remove(tableName);
+    }
+
+    public ITable removeTableData(String tableName) {
+        return this.tableDataMap.remove(tableName);
+    }
+
+
 }

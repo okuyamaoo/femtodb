@@ -60,7 +60,6 @@ public class DefaultTable extends AbstractTable implements ITable {
             }
         }
 
-        //this.columnDataMap = new ConcurrentHashMap<String, ColumnDataList>(8192);
     }
 
     public String[] getIndexColumnNames() {
@@ -104,20 +103,15 @@ public class DefaultTable extends AbstractTable implements ITable {
      *
      */
     public boolean removeTmpData(long oid) {
-//        SystemLog.println(oid);
-//        SystemLogprintln("remove befor size=" + this.dataMap.size());
         this.dataMap.remove(oid);
-//        SystemLog.println("remove after size=" + this.dataMap.size());
         return true;
     }
-
+    // 未使用
     public boolean modTableData(TableData data) {
-        // TODO:Indexデータも変更
         return true;
     }
-
+    // 未使用
     public boolean deleteTableData(TableData data) {
-        // TODO:Indexデータも変更
         return true;
     }
 
@@ -128,7 +122,7 @@ public class DefaultTable extends AbstractTable implements ITable {
     }
 
     public TableIterator getTableDataIterator(TransactionNo tn, SelectParameter selectParameter) {
-        // TODO:ここでIndexを適応したい
+        // ここでIndexを適応
         if (selectParameter.existIndexWhereParameter()) {
             // Indexの指定があるため、indexsMapより該当カラムのインデックスマップより取得する
             NormalWhereParameter indexWhereParameter = selectParameter.getIndexWhereParameter();
