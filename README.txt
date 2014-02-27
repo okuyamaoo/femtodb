@@ -59,10 +59,11 @@ jetty(Version-9.1.1) http://www.eclipse.org/jetty/
 
 
 [起動]
-インストール
- unzip femtodb-0.0.1.zip
-起動
-java -server -Xmx2048m -Xms2048m  -cp ./*:./lib/* femtohttp.server.FemtoHttpServer
+・インストール
+  $unzip femtodb-0.0.1.zip
+・起動
+  展開したディレクトリに移動
+  $java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer
 
 起動後ポート番号8080にてアクセス可能
 詳しい利用方法はFemtoDB-HTTPMethod-List.txtを参照してください
@@ -80,26 +81,71 @@ java -server -Xmx2048m -Xms2048m  -cp ./*:./lib/* femtohttp.server.FemtoHttpServ
             稼働サーバのディスク利用量に注意してください。
 
 ・永続化ログの出力ファイル名
-  -tl ./femtodb.log
+  -tl ファイルパス
    ファイル名をフルパスもしくは相対パスで指定
    デフォルト:./femtodb.log
+  設定例) -tl ./femtodb.log
 
 ・FemtoDBのHTTPサーバの起動ポート
-  -httpport 8080
+  -httpport 数値
    ポート番号を指定
    デフォルト:8080
+  設定例) -httpport 8088
+
 
 ・FemtoDBのHTTPサーバ同時接続最大数
-  -maxclients 300
+  -maxclients 数値
    最大数数値で指定
    デフォルト:150
+  設定例) -maxclients 200
 
 ・FemtoDBの応答タイムアウト時間
-  -timeout 30000
+  -timeout 数値
    最大時間をミリ秒で指定
    デフォルト:30000
+  設定例) -timeout 45000
+
+・FemtoDBの内蔵ストレージモード
+  -storage serialize
+   "serialize"を指定すると速度は落ちるがメモリを節約出来る
+   デフォルト:高速ストレージ
+   ※永続化ログを出力している場合ストレージを変えた場合で合っても互換性が保たれデータは復元される
+  設定例) -storage serialize
+
+・インデクッスを利用したクエリの並列実行数
+  -iqp 数値
+    大きくし過ぎるとCPUを専有してしまうためCPU数の1/2程度を推奨
+   デフォルト:4
+  設定例) -iqp 6
+
+・インデクッスを利用しないクエリの並列実行数
+  -nqp 数値
+    大きくし過ぎるとCPUを専有してしまうためCPU数の1/4程度を推奨
+    インデックスを利用しない検索クエリをほとんど利用しない場合は1などでも良い
+   デフォルト:2
+  設定例) -nqp 1
+
+・全件取得クエリの並列実行数
+  -fqp 数値
+    大きくし過ぎるとCPUを専有してしまうためCPU数の1/4程度を推奨
+    全件取得検索クエリをほとんど利用しない場合は1などでも良い
+   デフォルト:1
+  設定例) -fqp 1
+
+
 
 設定例)
-java -server -Xmx2048m -Xms2048m  -cp ./*:./lib/* femtohttp.server.FemtoHttpServer  -httpport 8088 -maxclients 300  -tlw true
+例1)永続化を行い起動
+$java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer -tlw true
+
+例2)起動ポートを7707へ変更し起動
+$java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer -httpport 7707
+
+例3)永続化を行いながら利用メモリを節約した起動
+$java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer -tlw true -storage serialize
+
+例4)CPU16コアのサーバ上で利用し、インデックスを利用しないクエリを利用しない場合
+$java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer -tlw true -iqp 8 -nqp 1
+
 
 

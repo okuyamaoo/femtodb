@@ -157,4 +157,49 @@ public class FemtoDBConnectorTable  extends HttpServlet {
             response.getWriter().println("\"Table already exists\"");
         }
     }
+
+    /** 
+     * テーブルを削除.<br>
+     * パラメータ：テーブル名<br>
+     * 返却値はJSONフォーマット<br>
+     * 本リクエストはパラメータとして以下を必要とする.<br>
+     * "table" : テーブル名を指定する<br>
+     *
+     * @param request
+     * @param response 
+     * @throws ServletException
+     * @throws IOException
+     */
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        Map resultMap = new LinkedHashMap();
+        
+        String tableName = request.getParameter("table");
+        if (tableName == null || tableName.trim().equals("")) {
+
+            response.setStatus(400);
+            response.setContentType("text/html; charset=utf-8");
+            response.getWriter().println("errormessage:\"Parameter 'table' not found\"");
+            return;
+        }
+
+        TableInfo tableInfo = FemtoHttpServer.dataAccessor.removeTable(tableName);
+
+        if (tableInfo == null) {
+            resultMap.put("result", "false");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("application/json; charset=utf-8");
+            String jsonStr = JSON.encode(resultMap);
+            response.setContentLength(jsonStr.getBytes().length);
+            response.getWriter().println(jsonStr);
+        } else {
+            resultMap.put("result", "true");
+            resultMap.put("tablename", tableName);
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("application/json; charset=utf-8");
+            String jsonStr = JSON.encode(resultMap);
+            response.setContentLength(jsonStr.getBytes().length);
+            response.getWriter().println(jsonStr);
+        }
+    }
 }
