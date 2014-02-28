@@ -218,7 +218,7 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
      * @throws IOException
      */
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        if (debug) SystemLog.println(request.getParameterMap());
+        SystemLog.queryLog(request.getParameterMap());
         boolean onceTransaction = false;
         long tansactionNo = -1L;
 
@@ -342,7 +342,7 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
      * @throws IOException
      */
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        if (debug) SystemLog.println(request.getParameterMap());
+        SystemLog.queryLog(request.getParameterMap());
         boolean onceTransaction = false;
         long tansactionNo = -1L;
 
@@ -456,7 +456,7 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
      * @throws IOException
      */
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        if (debug) SystemLog.println(request.getParameterMap());
+        SystemLog.queryLog(request.getParameterMap());
         boolean onceTransaction = false;
         long tansactionNo = -1L;
 
