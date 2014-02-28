@@ -19,6 +19,9 @@ MVCCモデルを参考したトランザクションが実装されており、�
 ※デフォルトの起動モードでは永続化機能はoffとなっているため、起動引数の「永続化ログの出力指定」を
 参照してください。
 
+※データ操作等詳しい利用方法はFemtoDB-HTTPMethod-List.txtを参照してください
+※データ一括で登録するローダーもあります。ローダーの説明はFemtoDB-Loader.txtを参照してください
+
 
 [データ操作方式]
 以下を備えています
@@ -53,9 +56,10 @@ MVCCモデルを参考したトランザクションが実装されており、�
 [必要なソフトウェア]
  java version "1.7"以上
  kuromoji(Version-0.7.7)  http://www.atilika.org/
-jsonic(Version-01.3.1) http://jsonic.sourceforge.jp/
-jetty(Version-9.1.1) http://www.eclipse.org/jetty/
+ jsonic(Version-01.3.1) http://jsonic.sourceforge.jp/
+ jetty(Version-9.1.1) http://www.eclipse.org/jetty/
 ※上記は全て同梱しています。
+全てのプロダクトに感謝しますm(_ _)m
 
 
 [起動]
@@ -64,9 +68,12 @@ jetty(Version-9.1.1) http://www.eclipse.org/jetty/
 ・起動
   展開したディレクトリに移動
   $java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer
-
 起動後ポート番号8080にてアクセス可能
-詳しい利用方法はFemtoDB-HTTPMethod-List.txtを参照してください
+
+
+
+
+
 
 [起動引数(オプション)]
 "-項目名 値"のフォーマットで指定

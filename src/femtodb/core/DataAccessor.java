@@ -50,8 +50,8 @@ public class DataAccessor {
         TransactionNoManager.initTransactionNoManager();
         TableManager.initOid();
         this.tableManager = new TableManager();
-        
-        this.dataOperationLogManager = new DataOperationLogManager(FemtoDBConstants.TRANSACTION_LOG, this);
+        // データ復元
+        loadOperationLog();
     }
 
     public DataAccessor(String[] bootArgs, long setTransactionNo, long setOid) throws Exception {
@@ -62,7 +62,22 @@ public class DataAccessor {
         TransactionNoManager.initTransactionNoManager(setTransactionNo);
         TableManager.initOid(setOid);
         this.tableManager = new TableManager();
-        this.dataOperationLogManager = new DataOperationLogManager(FemtoDBConstants.TRANSACTION_LOG, this);
+        // データ復元
+        loadOperationLog();
+    }
+
+    // 操作ログよりデータを復元
+    private void loadOperationLog() throws Exception {
+        // 復元処理中にログを出力するのは無意味なのでここでログ出力を抑制
+        boolean writeConf = FemtoDBConstants.TRANSACTION_LOG_WRITE;
+        if (writeConf == true) FemtoDBConstants.TRANSACTION_LOG_WRITE = false;
+
+        // データをロード
+        this.dataOperationLogManager = new DataOperationLogManager(FemtoDBConstants.TRANSACTION_LOG);
+        this.dataOperationLogManager.loadOperationLog(this);
+
+        // ログをもとに戻す
+        if (writeConf == true) FemtoDBConstants.TRANSACTION_LOG_WRITE = true;
     }
 
     public TransactionNo createTransaction() {
@@ -292,9 +307,12 @@ public class DataAccessor {
     }
 
 
-
+    // 操作ログ出力
     private boolean tansactionLogWrite(Object... logObjects) {
-        if (FemtoDBConstants.TRANSACTION_LOG_WRITE) return this.dataOperationLogManager.operationLogWrite(logObjects);
+        if (FemtoDBConstants.TRANSACTION_LOG_WRITE) {
+
+            return this.dataOperationLogManager.operationLogWrite(logObjects);
+        }
         return false;
     }
 
