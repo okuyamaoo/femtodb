@@ -33,7 +33,8 @@ public class SelectTableAccessor {
         List resultList = null;
         int baseResultCount = 0;
 
-        Object syncObj = QueryOptimizer.getParallelsSyncObject(selectParameter);
+        Thread th = Thread.currentThread();
+        Object syncObj = QueryOptimizer.getParallelsSyncObject(selectParameter, th);
 
         synchronized(syncObj) {
 
@@ -119,8 +120,33 @@ public class SelectTableAccessor {
         }
 
         if (normalWhereParameter != null) {
+            if (transactionNo.modTableFolder != null && transactionNo.modTableFolder.containsKey(tableName)) {
+                normalWhereExecutor.execute(iterator, transactionNo, allData);
+            } else if (!QueryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
+                normalWhereExecutor.execute(iterator, transactionNo, allData);
+            } else if (!selectParameter.existIndexWhereParameter()) {
+                normalWhereExecutor.execute(iterator, transactionNo, allData);
+            } else if (selectParameter.existIndexWhereParameter()) {
+                for (; iterator.hasNext();) {
+        
+                    iterator.nextEntry();
+                    TableData tableData = (TableData)iterator.getEntryValue();
+                    TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
+                    if (tableDataTransfer != null) {
+                    
+                        allData.add(tableDataTransfer);
+                    }
+                }
 
-            normalWhereExecutor.execute(iterator, transactionNo, allData);
+                if (!QueryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
+System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeee");
+                    // データを収集中にデータ追加が動きIndexが変わってしまっている。
+                    allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
+
+                    iterator = QueryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
+                    normalWhereExecutor.execute(iterator, transactionNo, allData);
+                }
+            }
         } else {
             for (; iterator.hasNext();) {
     

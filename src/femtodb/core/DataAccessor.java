@@ -37,6 +37,7 @@ public class DataAccessor {
     private ReadWriteLock logLock = new ReentrantReadWriteLock(true);
     private Lock logWriteLock = logLock.writeLock();
 
+    private RebuildIndexWorker rebuildIndexWorker = null;
 
     public DataAccessor() throws Exception {
         this(null);
@@ -78,6 +79,15 @@ public class DataAccessor {
 
         // ログをもとに戻す
         if (writeConf == true) FemtoDBConstants.TRANSACTION_LOG_WRITE = true;
+
+        List<TableInfo> list = this.tableManager.getTableInfoList();
+        if (list != null && list.size() > 0) {
+            for (TableInfo table : list) {
+                rebuildIndex(table.tableName);
+            }
+        }
+        rebuildIndexWorker = new RebuildIndexWorker(tableManager, this);
+        rebuildIndexWorker.start();
     }
 
     public TransactionNo createTransaction() {
@@ -222,6 +232,9 @@ public class DataAccessor {
             logWriteLock.lock();
             try {
                 tansactionLogWrite(new Integer(6), tableName, transactionNo, tableDataTransfer);
+
+                // データの登録のQptimizerへ登録
+                QueryOptimizer.lastUpdateAccessTimeInfo.put(tableName, System.nanoTime());
             } finally {
                 logWriteLock.unlock();
                 return ret;
@@ -316,4 +329,33 @@ public class DataAccessor {
         return false;
     }
 
+    class RebuildIndexWorker extends Thread {
+        private TableManager tableManager = null;
+        private DataAccessor baseInstance = null;
+
+        RebuildIndexWorker(TableManager tableManager, DataAccessor accessor) {
+            this.tableManager = tableManager;
+            this.baseInstance = accessor;
+        }
+
+        public void run() {
+            try {
+                this.setPriority(2);
+                while (true) {
+                    try {
+                        List<TableInfo> list = tableManager.getTableInfoList();
+                        for (TableInfo info : list) {
+                            this.baseInstance.rebuildIndex(info.tableName);
+                            Thread.sleep(3000);
+                        }
+                        Thread.sleep(7000);
+                    } catch (Exception e) {
+                    }
+                    
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

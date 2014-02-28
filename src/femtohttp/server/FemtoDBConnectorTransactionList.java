@@ -18,6 +18,7 @@ import femtodb.core.table.data.*;
 import femtodb.core.table.type.*;
 import femtodb.core.accessor.*;
 import femtodb.core.accessor.parameter.*;
+import femtodb.core.util.*;
 
 
 /** 
@@ -41,7 +42,8 @@ public class FemtoDBConnectorTransactionList  extends HttpServlet {
      * @throws IOException
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        
+        SystemLog.queryLog(request.getParameterMap());
+
         List<TransactionNo> list = FemtoHttpServer.dataAccessor.getTransactionNoList();
         List<Map> retList = new ArrayList();
         for (TransactionNo tn : list) {

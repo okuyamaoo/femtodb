@@ -16,6 +16,7 @@ import femtodb.core.table.data.*;
 import femtodb.core.table.type.*;
 import femtodb.core.accessor.*;
 import femtodb.core.accessor.parameter.*;
+import femtodb.core.util.*;
 
 /** 
  * FemtoDBConnectorTransactionクラス<br>
@@ -38,7 +39,8 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
      * @throws IOException
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        
+        SystemLog.queryLog(request.getParameterMap());
+
         TransactionNo tn = FemtoHttpServer.dataAccessor.createTransaction();
         long transactionNo = tn.getTransactionNo();
         StringBuilder strBuf = new StringBuilder();
@@ -68,6 +70,7 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
      * @throws IOException
      */
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        SystemLog.queryLog(request.getParameterMap());
 
         String transactionNo = request.getParameter("transactionno");
         long transactioNoLong = -1L;
@@ -138,12 +141,14 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
      * @throws IOException
      */
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        SystemLog.queryLog(request.getParameterMap());
+
         if (true) {
             // 使用禁止
             StringBuilder strBuf = new StringBuilder();
             strBuf.append("{\"result\":\"");
             strBuf.append("false");
-            strBuf.append("\"}");
+            strBuf.append("\", \"message\":\"method not found\"}");
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("application/json; charset=utf-8");
             response.getWriter().println(strBuf.toString());

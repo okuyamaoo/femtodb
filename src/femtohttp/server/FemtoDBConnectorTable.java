@@ -39,6 +39,8 @@ public class FemtoDBConnectorTable  extends HttpServlet {
      * @throws IOException
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        SystemLog.queryLog(request.getParameterMap());
+
         Map resultMap = new LinkedHashMap();
         List<TableInfo> tableList = FemtoHttpServer.dataAccessor.getTableList();
         response.setStatus(HttpServletResponse.SC_OK);
@@ -100,7 +102,7 @@ public class FemtoDBConnectorTable  extends HttpServlet {
      * @throws IOException
      */
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        SystemLog.println(request.getParameterMap());
+        SystemLog.queryLog(request.getParameterMap());
 
         String tableName = request.getParameter("table");
         if (tableName == null || tableName.trim().equals("")) {
@@ -171,6 +173,8 @@ public class FemtoDBConnectorTable  extends HttpServlet {
      * @throws IOException
      */
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        SystemLog.queryLog(request.getParameterMap());
+
         Map resultMap = new LinkedHashMap();
         
         String tableName = request.getParameter("table");

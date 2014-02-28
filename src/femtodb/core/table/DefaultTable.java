@@ -12,7 +12,7 @@ import femtodb.core.table.transaction.*;
 import femtodb.core.accessor.parameter.*;
 import femtodb.core.table.index.*;
 import femtodb.core.table.type.*;
-
+import femtodb.core.accessor.*;
 
 /** 
  * DefaultTableクラス<br>
@@ -160,6 +160,8 @@ public class DefaultTable extends AbstractTable implements ITable {
             IndexMap map = (IndexMap)targetEntry.getValue();
             map.rebuildIndex();
         }
+        
+        QueryOptimizer.lastRebuildIndexInfo.put(tableInfo.tableName, System.nanoTime());
         return true;
     }
 }
