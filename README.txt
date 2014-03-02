@@ -162,5 +162,3 @@ $java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoH
 例4)CPU16コアのサーバ上で利用し、インデックスを利用しないクエリを発行しない場合
 $java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer -tlw true -iqp 8 -nqp 1
 
-
-
