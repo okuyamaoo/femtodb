@@ -69,6 +69,9 @@ public class DataAccessor {
 
     // 操作ログよりデータを復元
     private void loadOperationLog() throws Exception {
+        //QueryOptimizerへTableManagerを渡す
+        QueryOptimizer.setTableManager(this.tableManager);
+
         // 復元処理中にログを出力するのは無意味なのでここでログ出力を抑制
         boolean writeConf = FemtoDBConstants.TRANSACTION_LOG_WRITE;
         if (writeConf == true) FemtoDBConstants.TRANSACTION_LOG_WRITE = false;
@@ -88,6 +91,7 @@ public class DataAccessor {
         }
         rebuildIndexWorker = new RebuildIndexWorker(tableManager, this);
         rebuildIndexWorker.start();
+
     }
 
     public TransactionNo createTransaction() {
@@ -276,10 +280,13 @@ public class DataAccessor {
     public int updateTableData(UpdateParameter updateParameter, TransactionNo transactionNo) throws UpdateException {
         UpdateTableAccessor updateTableAccessor = new UpdateTableAccessor(this.tableManager);
         try {
+            QueryOptimizer.lastUpdateAccessTimeInfo.put(updateParameter.getTableName(), System.nanoTime());
             int ret = updateTableAccessor.update(updateParameter, transactionNo);
+
             logWriteLock.lock();
             try {
                 tansactionLogWrite(new Integer(7), updateParameter, transactionNo);
+                
             } finally {
                 logWriteLock.unlock();
                 return ret;
@@ -300,6 +307,7 @@ public class DataAccessor {
     public int deleteTableData(DeleteParameter deleteParameter, TransactionNo transactionNo) throws DeleteException {
         DeleteTableAccessor deleteTableAccessor = new DeleteTableAccessor(this.tableManager);
         try {
+            QueryOptimizer.lastUpdateAccessTimeInfo.put(deleteParameter.getTableName(), System.nanoTime());
             int ret = deleteTableAccessor.delete(deleteParameter, transactionNo);
 
             logWriteLock.lock();
