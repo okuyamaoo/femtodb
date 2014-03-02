@@ -200,4 +200,21 @@ public class SelectParameter {
     public int getOffset() {
         return this.offset;
     }
+
+    public String toString() {
+        StringBuilder str = new StringBuilder();
+        str.append("TableName=[");
+        str.append(tableName);
+        str.append("] indexWhereParameter=[");
+        str.append(indexWhereParameter);
+        str.append("] normalWhereParameterList=[");
+        str.append(normalWhereParameterList);
+        str.append("] sortParameterList=[");
+        str.append(sortParameterList);
+        str.append("] limit=[");
+        str.append(limit);
+        str.append("] offset=[");
+        str.append(offset);
+        return str.toString();
+    }
 }

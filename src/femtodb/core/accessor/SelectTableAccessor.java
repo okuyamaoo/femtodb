@@ -29,49 +29,57 @@ public class SelectTableAccessor {
         this.tableManager = tableManager;
     }
 
-    public ResultStruct select(SelectParameter selectParameter, TransactionNo transactionNo) {
+    public ResultStruct select(SelectParameter selectParameter, TransactionNo transactionNo) throws SelectException {
+
         List resultList = null;
         int baseResultCount = 0;
 
         Thread th = Thread.currentThread();
-        Object syncObj = QueryOptimizer.getParallelsSyncObject(selectParameter, th);
+        Object syncObj = QueryOptimizer.getParallelsSyncObject(transactionNo, selectParameter, th);
 
-        synchronized(syncObj) {
-
-            long sec1Start = System.nanoTime();
-
-            if (selectParameter.existNormalWhereParameter() || selectParameter.existIndexWhereParameter()) {
-                // 検索条件有り
-                resultList = select(selectParameter.getTableName(), selectParameter, transactionNo);
-            } else {
-            
-                // 全件取得
-                resultList = select(selectParameter.getTableName(), transactionNo);
+        try {
+            synchronized(syncObj) {
+    
+                long sec1Start = System.nanoTime();
+    
+                if (selectParameter.existNormalWhereParameter() || selectParameter.existIndexWhereParameter()) {
+                    // 検索条件有り
+                    resultList = select(selectParameter.getTableName(), selectParameter, transactionNo);
+                } else {
+                
+                    // 全件取得
+                    resultList = select(selectParameter.getTableName(), transactionNo);
+                }
+        
+                long sec1End = System.nanoTime();
+                SystemLog.println("select - section1 time=" + (sec1End - sec1Start));
+    
+        
+                // limit offset 前の件数
+                baseResultCount = resultList.size();
+        
+                long sec2Start = System.nanoTime();
+                // order by は簡易実装
+                if (selectParameter.existSortParameter()) {
+                    resultList = orderBy(resultList, selectParameter);
+                    //resultList = limitOffset(resultList, selectParameter);
+                } else {
+                    // Limit Offset は簡易実装
+                    resultList = limitOffset(resultList, selectParameter);
+                }
+                long sec2End = System.nanoTime();
+                SystemLog.println("select - section2 time=" + (sec2End - sec2Start));
             }
     
-            long sec1End = System.nanoTime();
-            SystemLog.println("select - section1 time=" + (sec1End - sec1Start));
-
+            // 結果のフォルダー
+            ResultStruct resultStruct = new ResultStruct(baseResultCount, resultList);
     
-            // limit offset 前の件数
-            baseResultCount = resultList.size();
-    
-            long sec2Start = System.nanoTime();
-            // order by は簡易実装
-            if (selectParameter.existSortParameter()) {
-                resultList = orderBy(resultList, selectParameter);
-                //resultList = limitOffset(resultList, selectParameter);
-            } else {
-                // Limit Offset は簡易実装
-                resultList = limitOffset(resultList, selectParameter);
-            }
-            long sec2End = System.nanoTime();
-            SystemLog.println("select - section2 time=" + (sec2End - sec2Start));
+            return resultStruct;
+        } catch (Exception e) {
+            throw new SelectException(e);
+        } finally {
+            QueryOptimizer.removeThreadGroupData(th);
         }
-        // 結果のフォルダー
-        ResultStruct resultStruct = new ResultStruct(baseResultCount, resultList);
-
-        return resultStruct;
     }
 
     /**
@@ -106,7 +114,7 @@ public class SelectTableAccessor {
      *
      *
      */
-    protected List<TableDataTransfer> select(String tableName, SelectParameter selectParameter, TransactionNo transactionNo) {
+    protected List<TableDataTransfer> select(String tableName, SelectParameter selectParameter, TransactionNo transactionNo) throws Exception {
         ITable table = this.tableManager.getTableData(tableName);
         List<TableDataTransfer> allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
 
@@ -116,15 +124,22 @@ public class SelectTableAccessor {
         NormalWhereParameter normalWhereParameter = selectParameter.nextNormalWhereParameter();
         NormalWhereExecutor normalWhereExecutor = null;
         if (normalWhereParameter != null) {
-            normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
+            try {
+                normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
+            } catch (Exception e) {
+                throw e;
+            }
         }
 
         if (normalWhereParameter != null) {
             if (transactionNo.modTableFolder != null && transactionNo.modTableFolder.containsKey(tableName)) {
+
                 normalWhereExecutor.execute(iterator, transactionNo, allData);
             } else if (!QueryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
+
                 normalWhereExecutor.execute(iterator, transactionNo, allData);
             } else if (!selectParameter.existIndexWhereParameter()) {
+
                 normalWhereExecutor.execute(iterator, transactionNo, allData);
             } else if (selectParameter.existIndexWhereParameter()) {
                 for (; iterator.hasNext();) {
@@ -133,23 +148,21 @@ public class SelectTableAccessor {
                     TableData tableData = (TableData)iterator.getEntryValue();
                     TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
                     if (tableDataTransfer != null) {
-                    
                         allData.add(tableDataTransfer);
                     }
-                }
 
-                if (!QueryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
-System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeee");
-                    // データを収集中にデータ追加が動きIndexが変わってしまっている。
-                    allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
-
-                    iterator = QueryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
-                    normalWhereExecutor.execute(iterator, transactionNo, allData);
+                    if (!QueryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
+                        // データを収集中にデータ追加が動きIndexが変わってしまっている。
+                        allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
+    
+                        iterator = QueryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
+                        normalWhereExecutor.execute(iterator, transactionNo, allData);
+                    }
                 }
             }
         } else {
             for (; iterator.hasNext();) {
-    
+        
                 iterator.nextEntry();
                 TableData tableData = (TableData)iterator.getEntryValue();
                 TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
@@ -158,7 +171,6 @@ System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeee");
                     allData.add(tableDataTransfer);
                 }
             }
-
         }
 
         while ((normalWhereParameter = selectParameter.nextNormalWhereParameter()) != null) {
@@ -176,12 +188,10 @@ System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeee");
                     }
                 }
                 allData = tmpAllData;
-            }
+           }
         }
         return allData;
     }
-
-
 
     /**
      * Order byは簡易実装.<br>
@@ -439,6 +449,4 @@ System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeee");
        }
         return ret;
     }
-
-
 }

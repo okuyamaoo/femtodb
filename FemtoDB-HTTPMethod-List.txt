@@ -174,8 +174,8 @@ HTTPでの利用方法一覧
 　           ※備考
 　            ・複数指定する場合は","にて連結し指定する。
 　
-　   パラメータ4.例1) sort=sort=key1 desc
-　   パラメータ4.例2) sort=sort=price asc number,key1 desc
+　   パラメータ4.例1) sort=key1 desc
+　   パラメータ4.例2) sort=price asc number,key1 desc
 　------
 　   パラメータ5.説明：取得件数
 　     Key名="limit"

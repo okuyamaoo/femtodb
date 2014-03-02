@@ -159,7 +159,7 @@ $java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoH
 例3)永続化を行いながら利用メモリを節約した起動
 $java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer -tlw true -storage serialize
 
-例4)CPU16コアのサーバ上で利用し、インデックスを利用しないクエリを利用しない場合
+例4)CPU16コアのサーバ上で利用し、インデックスを利用しないクエリを発行しない場合
 $java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer -tlw true -iqp 8 -nqp 1
 
 
