@@ -69,7 +69,7 @@ MVCCモデルを参考したトランザクションが実装されており、�
   $unzip femtodb-0.0.1.zip
 ・起動
   展開したディレクトリに移動
-  $java -server -Xmx2048m -Xms2048m -cp ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer
+  $java -server -Xmx2048m -Xms2048m -classpath ./:./lib/*:./bin/* femtohttp.server.FemtoHttpServer
 起動後ポート番号8080にてアクセス可能
 
 
@@ -138,7 +138,7 @@ MVCCモデルを参考したトランザクションが実装されており、�
   -fqp 数値
     大きくし過ぎるとCPUを専有してしまうためCPU数の1/4程度を推奨
     全件取得検索クエリをほとんど利用しない場合は1などでも良い
-   デフォルト:1
+   デフォルト:2
   設定例) -fqp 1
 
 ・FemtoDBへのリクエスト内容をデバッグしFemtoDBの標準出力に出力します。
