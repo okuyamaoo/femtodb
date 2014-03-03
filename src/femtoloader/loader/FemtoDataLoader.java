@@ -188,7 +188,9 @@ public class FemtoDataLoader {
                     // カラム名は先頭行の定義を先頭から適応する。カラム定義数を超えるデータは無視される
                     Map insertData = new LinkedHashMap();
                     for (int idx = 0; idx < columnList.length; idx++) {
-                        insertData.put(columnList[idx], data[idx]);
+                        if (idx < data.length) {
+                            insertData.put(columnList[idx], data[idx]);
+                        }
                     }
                     int ret = insert(address, tableName, tno, port, insertData);
                     if (ret == -1) {
