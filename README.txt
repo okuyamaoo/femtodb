@@ -148,6 +148,12 @@ MVCCモデルを参考したトランザクションが実装されており、�
   設定例) -querydebug true
 
 
+・データ登録時にテーブルが存在しない場合自動的にテーブルを作成する
+  -table_create true/false
+  	trueにすることで自動的にされます。
+   デフォルト:false
+  設定例) -table_create true
+
 
 設定例)
 例1)永続化を行い起動

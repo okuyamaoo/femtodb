@@ -239,11 +239,26 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
 
             // テーブルの存在確認
             if ((tableInfo = FemtoHttpServer.dataAccessor.getTableInfo(tableName)) == null) {
-                // テーブル名なし
-                response.setContentType("text/html");
-                response.setStatus(400);
-                response.getWriter().println("'" + tableName + "' table not found.");
-                return;
+
+                if (!FemtoDBConstants.TABLE_AUTO_CREATE) {
+                    // テーブルなし
+                    response.setContentType("text/html");
+                    response.setStatus(400);
+                    response.getWriter().println("'" + tableName + "' table not found.");
+                    return;
+                } else {
+                    // テーブル自動作成が有効
+                    // 自動作成
+                    TableInfo createTableInfo = new TableInfo(tableName);
+                    int autoCreate = FemtoHttpServer.dataAccessor.createTable(createTableInfo);
+                    if (autoCreate != 1 && autoCreate != 2) {
+                        // テーブル自動作成失敗
+                        response.setContentType("text/html");
+                        response.setStatus(400);
+                        response.getWriter().println("'table' Auto create fail.");
+                        return;
+                    }
+                }
             }
     
             // TransactionNo
