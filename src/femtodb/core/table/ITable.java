@@ -18,7 +18,7 @@ public interface ITable {
 
     public String[] getIndexColumnNames();
 
-    public Map<Long, TableData> getDataMap();
+    public DataMap getDataMap();
 
     public Map <String, IndexMap> getIndexsMap();
 
@@ -39,6 +39,8 @@ public interface ITable {
     public TableIterator getTableDataIterator(TransactionNo tn, SelectParameter selectParameter);
 
     public boolean rebuildIndex();
+
+    public boolean cleanDeletedData();
 
     public int getRecodeSize();
 
