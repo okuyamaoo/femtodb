@@ -93,9 +93,9 @@ public class SelectTableAccessor {
 
         long start = System.nanoTime();
         TableIterator iterator = table.getTableDataIterator();
-        for (; iterator.hasNext();) {
+        while (iterator.hasNext()) {
 
-            iterator.nextEntry();
+            iterator.next();
             TableData tableData = (TableData)iterator.getEntryValue();
             TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
             if (tableDataTransfer != null) {
@@ -142,9 +142,9 @@ public class SelectTableAccessor {
 
                 normalWhereExecutor.execute(iterator, transactionNo, allData);
             } else if (selectParameter.existIndexWhereParameter()) {
-                for (; iterator.hasNext();) {
+                while (iterator.hasNext()) {
         
-                    iterator.nextEntry();
+                    iterator.next();
                     TableData tableData = (TableData)iterator.getEntryValue();
                     TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
                     if (tableDataTransfer != null) {
@@ -161,9 +161,9 @@ public class SelectTableAccessor {
                 }
             }
         } else {
-            for (; iterator.hasNext();) {
+            while (iterator.hasNext()) {
         
-                iterator.nextEntry();
+                iterator.next();
                 TableData tableData = (TableData)iterator.getEntryValue();
                 TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
                 if (tableDataTransfer != null) {

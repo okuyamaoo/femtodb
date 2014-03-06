@@ -47,6 +47,13 @@ public class TableAccessor {
         return true;
     }
 
+    public boolean cleanDeletedData(String tableName) {
+        ITable table = this.tableManager.getTableData(tableName);
+        if (table == null) return false;
+        table.cleanDeletedData();
+        return true;
+    }
+
     public List<TableInfo> getTableList() {
         return this.tableManager.getTableInfoList();
     }

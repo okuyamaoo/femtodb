@@ -23,6 +23,8 @@ public class TableData {
     private Object sync = new Object();
     public long oid = -1L;
 
+    private String uniqueKey = null;
+
     private TableInfo tableInfo = null;
 
     public TableDataTransfer newData = null; // ここは更新中データ、Rollbackデータ、commitデータが来る可能性がある。しかし同時に更新出来るトランザクションは1つのみ
@@ -49,6 +51,21 @@ public class TableData {
         tn.putTableData(this);
     }
 
+
+    public TableData(long oid, TransactionNo tn, TableInfo tableInfo, ITable parentTable, TableDataTransfer tableDataTransfer, String uniqueKey) {
+        this.oid = oid;
+        this.uniqueKey = uniqueKey;
+        this.tableInfo = tableInfo;
+        this.parentTable = parentTable;
+
+
+        tableDataTransfer.setTransactionNo(tn);
+        tableDataTransfer.saveTmpData();
+
+        this.newData = tableDataTransfer;
+        tn.putTableData(this);
+    }
+
     public ITable getParentTable() {
         return this.parentTable;
     }
@@ -59,6 +76,10 @@ public class TableData {
 
     public TableDataTransfer getOldData() {
         return oldData;
+    }
+
+    public String getUniqueKey() {
+        return this.uniqueKey;
     }
 
 /*    public void storeData(Map<Long, ColumnData> tableColumnData) {

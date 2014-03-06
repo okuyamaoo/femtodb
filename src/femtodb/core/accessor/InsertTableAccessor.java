@@ -30,4 +30,16 @@ public class InsertTableAccessor {
         table.addTableData(tableData);
         return 1;
     }
+
+    public int insert(String tableName, TransactionNo transactionNo, TableDataTransfer tableDataTransfer, String uniqueKey) {
+        ITable table = this.tableManager.getTableData(tableName);
+        TableData tableData = new TableData(this.tableManager.nextOid(), 
+                                            transactionNo, 
+                                            this.tableManager.getTableInfo(tableName),
+                                            table,
+                                            tableDataTransfer,
+                                            uniqueKey);
+        table.addTableData(tableData);
+        return 1;
+    }
 }

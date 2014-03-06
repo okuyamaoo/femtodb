@@ -37,7 +37,7 @@ public class DataAccessor {
     private ReadWriteLock logLock = new ReentrantReadWriteLock(true);
     private Lock logWriteLock = logLock.writeLock();
 
-    private RebuildIndexWorker rebuildIndexWorker = null;
+    private RebuildTableDataWorker rebuildTableDataWorker = null;
 
     public DataAccessor() throws Exception {
         this(null);
@@ -89,9 +89,10 @@ public class DataAccessor {
                 rebuildIndex(table.tableName);
             }
         }
-        rebuildIndexWorker = new RebuildIndexWorker(tableManager, this);
-        rebuildIndexWorker.start();
-
+        rebuildTableDataWorker = new RebuildTableDataWorker(tableManager, this);
+        rebuildTableDataWorker.start();
+        // 復元後に1度だけGC呼び出し
+        System.gc();
     }
 
     public TransactionNo createTransaction() {
@@ -224,18 +225,37 @@ public class DataAccessor {
     }
 
 
+    public boolean cleanDeletedData(String tableName) {
+
+        TableAccessor tableAccessor = new TableAccessor(this.tableManager);
+        return tableAccessor.cleanDeletedData(tableName);
+    }
+
+
     public int insertTableData(String tableName, long transactionNo, TableDataTransfer tableDataTransfer) throws InsertException {
-        return insertTableData(tableName, TransactionNoManager.getTransactionNoObejct(transactionNo), tableDataTransfer);
+        return insertTableData(tableName, TransactionNoManager.getTransactionNoObejct(transactionNo), tableDataTransfer, null);
+    }
+
+
+    public int insertTableData(String tableName, long transactionNo, TableDataTransfer tableDataTransfer, String uniqueKey) throws InsertException {
+        return insertTableData(tableName, TransactionNoManager.getTransactionNoObejct(transactionNo), tableDataTransfer, uniqueKey);
     }
 
     public int insertTableData(String tableName, TransactionNo transactionNo, TableDataTransfer tableDataTransfer) throws InsertException {
+        return insertTableData(tableName, transactionNo, tableDataTransfer, null);
+    }
+    public int insertTableData(String tableName, TransactionNo transactionNo, TableDataTransfer tableDataTransfer, String uniqueKey) throws InsertException {
         InsertTableAccessor insertTableAccessor = new InsertTableAccessor(this.tableManager);
         try {
-
-            int ret = insertTableAccessor.insert(tableName, transactionNo, tableDataTransfer);
+            int ret = -1;
+            if (uniqueKey == null) {
+                ret = insertTableAccessor.insert(tableName, transactionNo, tableDataTransfer);
+            } else {
+                ret = insertTableAccessor.insert(tableName, transactionNo, tableDataTransfer, uniqueKey);
+            }
             logWriteLock.lock();
             try {
-                tansactionLogWrite(new Integer(6), tableName, transactionNo, tableDataTransfer);
+                tansactionLogWrite(new Integer(6), tableName, transactionNo, tableDataTransfer, uniqueKey);
 
                 // データの登録のQptimizerへ登録
                 QueryOptimizer.lastUpdateAccessTimeInfo.put(tableName, System.nanoTime());
@@ -337,23 +357,28 @@ public class DataAccessor {
         return false;
     }
 
-    class RebuildIndexWorker extends Thread {
+    class RebuildTableDataWorker extends Thread {
         private TableManager tableManager = null;
         private DataAccessor baseInstance = null;
 
-        RebuildIndexWorker(TableManager tableManager, DataAccessor accessor) {
+        RebuildTableDataWorker(TableManager tableManager, DataAccessor accessor) {
             this.tableManager = tableManager;
             this.baseInstance = accessor;
         }
 
         public void run() {
             try {
-                this.setPriority(2);
+                this.setPriority(1);
                 while (true) {
                     try {
                         List<TableInfo> list = tableManager.getTableInfoList();
                         for (TableInfo info : list) {
                             this.baseInstance.rebuildIndex(info.tableName);
+                            Thread.sleep(3000);
+                        }
+                        Thread.sleep(7000);
+                        for (TableInfo info : list) {
+                            this.baseInstance.cleanDeletedData(info.tableName);
                             Thread.sleep(3000);
                         }
                         Thread.sleep(7000);

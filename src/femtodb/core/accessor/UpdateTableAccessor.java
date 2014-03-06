@@ -51,9 +51,9 @@ public class UpdateTableAccessor {
 
         if (updateColumnList != null) {
 
-            for (; iterator.hasNext();) {
+            while (iterator.hasNext()) {
     
-                iterator.nextEntry();
+                iterator.next();
                 TableData tableData = (TableData)iterator.getEntryValue();
                 TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
                 TableDataTransfer upateTableDataTransfer = tableDataTransfer.clone4Update();
@@ -103,9 +103,9 @@ public class UpdateTableAccessor {
                     normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
                 }
         
-                for (; iterator.hasNext();) {
+                while (iterator.hasNext()) {
         
-                    iterator.nextEntry();
+                    iterator.next();
                     TableData tableData = (TableData)iterator.getEntryValue();
                     TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
                     if (tableDataTransfer != null) {

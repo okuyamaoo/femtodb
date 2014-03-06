@@ -55,9 +55,9 @@ public class DeleteTableAccessor {
         TableIterator iterator = table.getTableDataIterator();
 
 
-        for (; iterator.hasNext();) {
+        while(iterator.hasNext()) {
 
-            iterator.nextEntry();
+            iterator.next();
             TableData tableData = (TableData)iterator.getEntryValue();
             TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
             if (tableDataTransfer == null) continue; // Delete済みのTableDataの場合はTableTransaferはnull
@@ -103,9 +103,9 @@ public class DeleteTableAccessor {
                     }
                 }
         
-                for (; iterator.hasNext();) {
+                while (iterator.hasNext()) {
         
-                    iterator.nextEntry();
+                    iterator.next();
                     TableData tableData = (TableData)iterator.getEntryValue();
                     TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(transactionNo);
                     if (tableDataTransfer != null) {

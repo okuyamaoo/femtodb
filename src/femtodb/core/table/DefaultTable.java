@@ -25,24 +25,21 @@ public class DefaultTable extends AbstractTable implements ITable {
     private TableInfo tableInfo = null;
     public String[] indexColumnNames = null;
 
-    public Map<Long, TableData> dataMap = null;
-    public Map <String, IndexMap> indexsMap = null;
-
-
-    //public Map<String, ColumnDataList> columnDataMap = null; // カラム名とそのカラムのデータのリスト
-
+    public DataMap dataMap = null;
+    public Map<String, IndexMap> indexsMap = null;
+    public Map<String, TableData> uniqueKeyMap = null;
 
     private ReadWriteLock lock = new ReentrantReadWriteLock(true);
-    private Lock readLock = lock.readLock();
-    private Lock writeLock = lock.writeLock();
+    private Lock uniqueMapReadLock = lock.readLock();
+    private Lock uniqueMapWriteLock = lock.writeLock();
 
 
     public DefaultTable(TableInfo tableInfo) {
         this.tableInfo = tableInfo;
         this.indexColumnNames = this.tableInfo.getIndexColumnNameList();
-        this.dataMap = new ConcurrentHashMap<Long, TableData>(1000000);
+        this.dataMap = new DataMap();
         this.indexsMap = new ConcurrentHashMap<String, IndexMap>();
-
+        this.uniqueKeyMap = new ConcurrentHashMap<String, TableData>(100000);
 
         if (indexColumnNames != null && indexColumnNames.length > 0) {
             for (int idx = 0; idx < indexColumnNames.length; idx++) {
@@ -66,11 +63,11 @@ public class DefaultTable extends AbstractTable implements ITable {
         return this.indexColumnNames;
     }
 
-    public Map<Long, TableData> getDataMap() {
+    public DataMap getDataMap() {
         return this.dataMap;
     }
 
-    public Map <String, IndexMap> getIndexsMap() {
+    public Map<String, IndexMap> getIndexsMap() {
         return this.indexsMap;
     }
 
@@ -79,22 +76,28 @@ public class DefaultTable extends AbstractTable implements ITable {
     }
 
     public List<String> getColumnNameList() {
-        readLock.lock();
-        try {
-            List<String> retList = new ArrayList();
-            for (String key : this.tableInfo.infomationMap.keySet()) {
-                retList.add(key);
-            }
-            return retList;
-        } finally {
-            readLock.unlock();
+        List<String> retList = new ArrayList();
+        for (String key : this.tableInfo.infomationMap.keySet()) {
+            retList.add(key);
         }
+        return retList;
     }
 
 
     public boolean addTableData(TableData data) {
 
-        this.dataMap.put(data.oid, data);
+        String uniqueKey = data.getUniqueKey();
+        if (uniqueKey == null) {
+            this.dataMap.put(data.oid, data);
+        } else {
+            uniqueMapWriteLock.lock();
+            try {
+                this.dataMap.put(data.oid, data);
+                this.uniqueKeyMap.put(uniqueKey, data);
+            } finally {
+                uniqueMapWriteLock.unlock();
+            }
+        }
         return true;
     }
 
@@ -103,21 +106,49 @@ public class DefaultTable extends AbstractTable implements ITable {
      *
      */
     public boolean removeTmpData(long oid) {
-        this.dataMap.remove(oid);
+        TableData tableData = this.dataMap.remove(oid);
+        removeUniqueKeyData(tableData);
         return true;
     }
+
+    private void removeUniqueKeyData(TableData tableData) {
+        if (tableData !=null) {
+            uniqueMapWriteLock.lock();
+            try {
+                TableData rmTargetTableData = this.uniqueKeyMap.get(tableData.getUniqueKey());
+                if (rmTargetTableData != null) {
+                    if (rmTargetTableData.oid == tableData.oid) {
+                        this.uniqueKeyMap.remove(tableData.getUniqueKey());
+                    }
+                }
+            } finally {
+                uniqueMapWriteLock.unlock();
+            }
+        }
+    }
+
     // 未使用
     public boolean modTableData(TableData data) {
         return true;
     }
+
     // 未使用
     public boolean deleteTableData(TableData data) {
         return true;
     }
 
+    public TableDataTransfer getTableData4UniqueKey(TransactionNo tn, String uniqueKey) {
+        TableData tableData = uniqueKeyMap.get(uniqueKey);
+        if (tableData != null) {
+            TableDataTransfer tableDataTransfer = tableData.getTableDataTransfer(tn);
+            return tableDataTransfer;
+        }
+        return null;
+    }
+
     public TableIterator getTableDataIterator() {
 
-        TableIterator tableIterator = new DefaultTableIterator(this.dataMap.entrySet().iterator());
+        TableIterator tableIterator = new DefaultTableIterator(this.dataMap.getIterator());
         return tableIterator;
     }
 
@@ -131,26 +162,21 @@ public class DefaultTable extends AbstractTable implements ITable {
 
             IndexMap indexMap = this.indexsMap.get(indexColumnName);
             if (indexMap == null) {
-                TableIterator tableIterator = new DefaultTableIterator(this.dataMap.entrySet().iterator());
+                TableIterator tableIterator = new DefaultTableIterator(this.dataMap.getIterator());
                 return tableIterator;
             } else {
                 TableIterator tableIterator = new IndexTableIterator(getTableName(), tn, indexMap, indexColumnName, indexParameter.toString());
                 return tableIterator;
             }
         } else {
-            TableIterator tableIterator = new DefaultTableIterator(this.dataMap.entrySet().iterator());
+            TableIterator tableIterator = new DefaultTableIterator(this.dataMap.getIterator());
             return tableIterator;
         }
     }
 
 
     public int getRecodeSize() {
-        readLock.lock();
-        try {
-            return this.dataMap.size();
-        } finally {
-            readLock.unlock();
-        }
+        return this.dataMap.size();
     }
 
     public boolean rebuildIndex() {
@@ -164,4 +190,47 @@ public class DefaultTable extends AbstractTable implements ITable {
         QueryOptimizer.lastRebuildIndexInfo.put(tableInfo.tableName, System.nanoTime());
         return true;
     }
+
+
+
+    public boolean cleanDeletedData() {
+        DataMapIterator dataMapIterator = dataMap.getIterator();
+        int cnt = 0;
+        while(dataMapIterator.hasNext()) {
+            cnt++;
+            if ((cnt % 100) == 0) Thread.yield();
+            dataMapIterator.next();
+            TableData tableData = dataMapIterator.getValue();
+
+            if (tableData != null) {
+
+                TableDataTransfer oldData = tableData.oldData;
+                TableDataTransfer newData = tableData.newData;
+
+                boolean deleted = false;
+                if (newData != null && newData.getTransactionNo().isCommited() == true && newData.isDeletedData()) {
+                    dataMap.remove(dataMapIterator.getKey());
+                    deleted = true;
+                } else {
+                    if (newData != null && newData.getTransactionNo().isCommited() == false) {
+                        if (oldData.isDeletedData()) {
+                            dataMap.remove(dataMapIterator.getKey());
+                            deleted = true;
+                        }
+                    }
+                }
+
+                if (deleted) {
+                    String uniqueKey = tableData.getUniqueKey();
+                    if (uniqueKey != null) {
+                        removeUniqueKeyData(tableData);
+                    }
+                }
+            } else {
+                dataMap.remove(dataMapIterator.getKey());
+            }
+        }
+        return true;
+    }
+
 }
