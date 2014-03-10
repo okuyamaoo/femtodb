@@ -85,7 +85,7 @@ public class FemtoDataLoader {
             }
 
             FemtoDataLoader loader = new FemtoDataLoader();
-            loader.load(file, tableName, args[2], new Integer(args[3]).intValue(), args);
+            loader.load(file, tableName, args[2], Integer.parseInt(args[3]), args);
         } catch (Exception e) {
             e.printStackTrace();
         }

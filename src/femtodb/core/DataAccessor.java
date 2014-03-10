@@ -99,7 +99,7 @@ public class DataAccessor {
         TransactionNo tn = TransactionNoManager.createTransactionNo();
         logWriteLock.lock();
         try {
-            tansactionLogWrite(new Integer(1));
+            tansactionLogWrite(Integer.valueOf(1));
         } finally {
             logWriteLock.unlock();
             return tn;
@@ -117,7 +117,7 @@ public class DataAccessor {
         boolean ret = TransactionNoManager.commitTransaction(transactionNo);
         logWriteLock.lock();
         try {
-            tansactionLogWrite(new Integer(2), transactionNo);
+            tansactionLogWrite(Integer.valueOf(2), transactionNo);
         } finally {
             logWriteLock.unlock();
             return ret;
@@ -136,7 +136,7 @@ public class DataAccessor {
         boolean ret = TransactionNoManager.rollbackTransaction(transactionNo);
         logWriteLock.lock();
         try {
-            tansactionLogWrite(new Integer(3), transactionNo);
+            tansactionLogWrite(Integer.valueOf(3), transactionNo);
         } finally {
             logWriteLock.unlock();
             return ret;
@@ -152,7 +152,7 @@ public class DataAccessor {
         boolean ret = TransactionNoManager.endTransaction(transactionNo);
         logWriteLock.lock();
         try {
-            tansactionLogWrite(new Integer(4), transactionNo);
+            tansactionLogWrite(Integer.valueOf(4), transactionNo);
         } finally {
             logWriteLock.unlock();
             return ret;
@@ -177,7 +177,7 @@ public class DataAccessor {
         if (ret == 1) {
             logWriteLock.lock();
             try {
-                tansactionLogWrite(new Integer(5), tableInfo);
+                tansactionLogWrite(Integer.valueOf(5), tableInfo);
 //              SystemLog.println("o5=" + tableInfo.createStoreString());
             } finally {
                 logWriteLock.unlock();
@@ -212,7 +212,7 @@ public class DataAccessor {
         TableAccessor tableAccessor = new TableAccessor(this.tableManager);
         TableInfo tableInfo = tableAccessor.remove(tableName);
         if (tableInfo == null) return null;
-        tansactionLogWrite(new Integer(99), tableName);
+        tansactionLogWrite(Integer.valueOf(99), tableName);
         return tableInfo;
     }
 
@@ -255,7 +255,7 @@ public class DataAccessor {
             }
             logWriteLock.lock();
             try {
-                tansactionLogWrite(new Integer(6), tableName, transactionNo, tableDataTransfer, uniqueKey);
+                tansactionLogWrite(Integer.valueOf(6), tableName, transactionNo, tableDataTransfer, uniqueKey);
 
                 // データの登録のQptimizerへ登録
                 QueryOptimizer.lastUpdateAccessTimeInfo.put(tableName, System.nanoTime());
@@ -305,7 +305,7 @@ public class DataAccessor {
 
             logWriteLock.lock();
             try {
-                tansactionLogWrite(new Integer(7), updateParameter, transactionNo);
+                tansactionLogWrite(Integer.valueOf(7), updateParameter, transactionNo);
                 
             } finally {
                 logWriteLock.unlock();
@@ -332,7 +332,7 @@ public class DataAccessor {
 
             logWriteLock.lock();
             try {
-                tansactionLogWrite(new Integer(8), deleteParameter, transactionNo);
+                tansactionLogWrite(Integer.valueOf(8), deleteParameter, transactionNo);
             } finally {
                 logWriteLock.unlock();
                 return ret;

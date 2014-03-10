@@ -75,7 +75,7 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
         String transactionNo = request.getParameter("transactionno");
         long transactioNoLong = -1L;
         try {
-            transactioNoLong = new Long(transactionNo).longValue();
+            transactioNoLong = Long.parseLong(transactionNo);
         } catch (Exception e2) {
             response.setStatus(400);
             response.setContentType("text/html; charset=utf-8");
@@ -158,7 +158,7 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
         String transactionNo = request.getParameter("transactionno");
         long transactioNoLong = -1L;
         try {
-            transactioNoLong = new Long(transactionNo).longValue();
+            transactioNoLong = Long.parseLong(transactionNo);
         } catch (Exception e2) {
             StringBuilder strBuf = new StringBuilder();
             strBuf.append("{\"result\":\"");

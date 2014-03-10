@@ -101,7 +101,7 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
                 // 指定あり
                 // 妥当性確認
                 if (!executeTransactionNoValidate(response, tnNoStr)) return;
-                tansactionNo = new Long(tnNoStr).longValue();
+                tansactionNo = Long.parseLong(tnNoStr);
             }
     
             // where取得
@@ -269,7 +269,7 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
                 // 指定あり
                 // 妥当性確認
                 if (!executeTransactionNoValidate(response, tnNoStr)) return;
-                tansactionNo = new Long(tnNoStr).longValue();
+                tansactionNo = Long.parseLong(tnNoStr);
             }
 
             // 登録データ部分取得
@@ -393,7 +393,7 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
                 // 指定あり
                 // 妥当性確認
                 if (!executeTransactionNoValidate(response, tnNoStr)) return;
-                tansactionNo = new Long(tnNoStr).longValue();
+                tansactionNo = Long.parseLong(tnNoStr);
             }
     
             // where取得
@@ -521,7 +521,7 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
                 // 指定あり
                 // 妥当性確認
                 if (!executeTransactionNoValidate(response, tnNoStr)) return;
-                tansactionNo = new Long(tnNoStr).longValue();
+                tansactionNo = Long.parseLong(tnNoStr);
             }
     
             // where取得

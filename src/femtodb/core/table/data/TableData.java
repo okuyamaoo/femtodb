@@ -20,16 +20,15 @@ import femtodb.core.table.transaction.*;
  */
 public class TableData {
 
-    private Object sync = new Object();
     public long oid = -1L;
+    public int hashCode = -1;
+
 
     private String uniqueKey = null;
 
-    private TableInfo tableInfo = null;
 
     public TableDataTransfer newData = null; // ここは更新中データ、Rollbackデータ、commitデータが来る可能性がある。しかし同時に更新出来るトランザクションは1つのみ
     public TableDataTransfer oldData = null; // ここには必ずcommit済みのデータしかこない
-
 
     private ITable parentTable = null;
 
@@ -38,9 +37,9 @@ public class TableData {
     private Lock writeLock = lock.writeLock();
 
 
-    public TableData(long oid, TransactionNo tn, TableInfo tableInfo, ITable parentTable, TableDataTransfer tableDataTransfer) {
+    public TableData(long oid, TransactionNo tn, ITable parentTable, TableDataTransfer tableDataTransfer) {
         this.oid = oid;
-        this.tableInfo = tableInfo;
+        this.hashCode = Long.valueOf(oid).hashCode();
         this.parentTable = parentTable;
 
 
@@ -52,12 +51,11 @@ public class TableData {
     }
 
 
-    public TableData(long oid, TransactionNo tn, TableInfo tableInfo, ITable parentTable, TableDataTransfer tableDataTransfer, String uniqueKey) {
+    public TableData(long oid, TransactionNo tn, ITable parentTable, TableDataTransfer tableDataTransfer, String uniqueKey) {
         this.oid = oid;
+        this.hashCode = Long.valueOf(oid).hashCode();
         this.uniqueKey = uniqueKey;
-        this.tableInfo = tableInfo;
         this.parentTable = parentTable;
-
 
         tableDataTransfer.setTransactionNo(tn);
         tableDataTransfer.saveTmpData();
@@ -189,7 +187,7 @@ public class TableData {
     
     
     public int hashCode() {
-        return new Long(oid).hashCode();
+        return this.hashCode;
     }
 
 
