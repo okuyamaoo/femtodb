@@ -24,7 +24,6 @@ public class InsertTableAccessor {
         ITable table = this.tableManager.getTableData(tableName);
         TableData tableData = new TableData(this.tableManager.nextOid(), 
                                             transactionNo, 
-                                            this.tableManager.getTableInfo(tableName),
                                             table,
                                             tableDataTransfer);
         table.addTableData(tableData);
@@ -35,7 +34,6 @@ public class InsertTableAccessor {
         ITable table = this.tableManager.getTableData(tableName);
         TableData tableData = new TableData(this.tableManager.nextOid(), 
                                             transactionNo, 
-                                            this.tableManager.getTableInfo(tableName),
                                             table,
                                             tableDataTransfer,
                                             uniqueKey);

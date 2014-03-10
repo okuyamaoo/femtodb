@@ -175,13 +175,16 @@ public class SelectTableAccessor {
 
         while ((normalWhereParameter = selectParameter.nextNormalWhereParameter()) != null) {
 
-            normalWhereExecutor = null;
-            normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
-            if (allData.size() > 0) {
-                int size = allData.size();
-                List<TableDataTransfer> tmpAllData = new ArrayList(size);
 
-                for (TableDataTransfer targetTableDataTransfer:allData) {
+            normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
+
+            int allDataSize = allData.size();
+
+            if (allDataSize > 0) {
+
+                List<TableDataTransfer> tmpAllData = new ArrayList(allDataSize);
+
+                for (TableDataTransfer targetTableDataTransfer : allData) {
 
                     if (normalWhereExecutor.execute(targetTableDataTransfer)) {
                         tmpAllData.add(targetTableDataTransfer);
