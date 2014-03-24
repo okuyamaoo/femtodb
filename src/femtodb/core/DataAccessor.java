@@ -42,6 +42,8 @@ public class DataAccessor {
 
     private RebuildTableDataWorker rebuildTableDataWorker = null;
 
+    private String[] bootArgs = null;
+
     public DataAccessor() throws Exception {
         this(null);
     }
@@ -53,6 +55,7 @@ public class DataAccessor {
     public DataAccessor(String[] bootArgs, boolean backUpProccess) throws Exception {
 
         if (backUpProccess == false && bootArgs != null) {
+            this.bootArgs = bootArgs;
             FemtoDBConstants.build(bootArgs);
         }
 
@@ -142,8 +145,8 @@ public class DataAccessor {
         List<TableInfo> list = this.tableManager.getTableInfoList();
         if (list != null && list.size() > 0) {
             for (TableInfo table : list) {
-                rebuildIndex(table.tableName);
                 createAllDataIndex(table.tableName);
+                rebuildIndex(table.tableName);
             }
         }
         rebuildTableDataWorker = new RebuildTableDataWorker(tableManager, this);
@@ -541,12 +544,13 @@ public class DataAccessor {
                         Thread.sleep(7000);
 
                         // TODO:自動バックアップは一時的に停止
-                        /*System.out.println("start");
+                        System.out.println("start");
                         long objStoreStart = System.nanoTime();
-                        if (!this.baseInstance.storeTableObject()) System.out.println("error");
+                        DataAccessor dataAccessor = new DataAccessor(bootArgs, true);
+                        if (!dataAccessor.storeTableObject()) System.out.println("error");
                         long objStoreEnd = System.nanoTime();
                         System.out.println(" Stored time" + ((objStoreEnd - objStoreStart) / 1000 /1000) + "ms");
-                        System.out.println("end");*/
+                        System.out.println("end");
                     } catch (Throwable e) {
                         e.printStackTrace();
                     }
