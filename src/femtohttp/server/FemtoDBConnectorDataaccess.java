@@ -42,6 +42,8 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
      * text:左辺のカラムのデータ内に右辺で指定したデータが部分一致<br>
      * >:左辺のカラムのデータ内に右辺で指定した値よりも大きい値に一致<br>
      * <:左辺のカラムのデータ内に右辺で指定した値よりも小さい値に一致<br>
+     * in:左辺のカラムのデータ内に右辺で指定したデータのいづれかが含まれている場合<br>
+     * notin:左辺のカラムのデータ内に右辺で指定したデータのいづれも含まれていない場合<br>
      *&nbsp;&nbsp;これらの条件はテーブル作成時のインデックス作成たカラム、していないカラムを含め全てに適応出来るが、<br>
      *&nbsp;&nbsp;インデックス作成したカラムの方が高速に検索可能である<br>
      *&nbsp;&nbsp;※インデックス作成可能な条件は"=" or "text"のみである<br>
@@ -138,7 +140,8 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
     
             // トランザクションNoを指定していない場合は一回利用のTransactionNoオブジェクトを作成し番号を取得
             if (tansactionNo == -1) {
-                tansactionNo = getTransactionNo();
+                // 匿名トランザクションを作成
+                tansactionNo = getAnonymousTransactionNo();
                 onceTransaction = true;
             }
     
@@ -193,10 +196,6 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
         } catch (Exception e) {
             e.printStackTrace();
             response.setStatus(500);
-        } finally {
-            if (onceTransaction) {
-                FemtoHttpServer.dataAccessor.endTransaction(tansactionNo);
-            }
         }
     }
 

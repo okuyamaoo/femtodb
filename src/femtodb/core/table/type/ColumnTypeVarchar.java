@@ -1,5 +1,6 @@
 package femtodb.core.table.type;
 
+import java.io.*;
 
 /** 
  * ColumnTypeVarcharクラス<br>
@@ -7,7 +8,7 @@ package femtodb.core.table.type;
  * @author Takahiro Iwase
  * @license Apache License 2.0 
  */
-public class ColumnTypeVarchar extends AbstractColumnType implements IColumnType {
+public class ColumnTypeVarchar extends AbstractColumnType implements IColumnType, Serializable {
 
     /**
      * .<br>

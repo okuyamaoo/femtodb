@@ -1,12 +1,13 @@
 package femtodb.core.table.type;
 
+import java.io.*;
 /** 
  * AbstractColumnType<br>
  *
  * @author Takahiro Iwase
  * @license Apache License 2.0 
  */
-abstract class AbstractColumnType {
+abstract class AbstractColumnType implements Serializable{
 
     /**
      * カラムの型を返す.<br>

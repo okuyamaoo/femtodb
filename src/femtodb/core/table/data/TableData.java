@@ -1,5 +1,6 @@
 package femtodb.core.table.data;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
@@ -18,7 +19,7 @@ import femtodb.core.table.transaction.*;
  * @author Takahiro Iwase
  * @license Apache License 2.0 
  */
-public class TableData {
+public class TableData implements Serializable {
 
     public long oid = -1L;
     public int hashCode = -1;
@@ -28,7 +29,10 @@ public class TableData {
 
 
     public TableDataTransfer newData = null; // ここは更新中データ、Rollbackデータ、commitデータが来る可能性がある。しかし同時に更新出来るトランザクションは1つのみ
+    public TransactionNo newTransactionNo = null; 
+
     public TableDataTransfer oldData = null; // ここには必ずcommit済みのデータしかこない
+    public TransactionNo oldTransactionNo = null;
 
     private ITable parentTable = null;
 
@@ -47,6 +51,7 @@ public class TableData {
         tableDataTransfer.saveTmpData();
 
         this.newData = tableDataTransfer;
+        this.newTransactionNo = this.newData.getTransactionNo();
         tn.putTableData(this);
     }
 
@@ -61,6 +66,8 @@ public class TableData {
         tableDataTransfer.saveTmpData();
 
         this.newData = tableDataTransfer;
+        this.newTransactionNo = this.newData.getTransactionNo();
+
         tn.putTableData(this);
     }
 
@@ -92,23 +99,21 @@ public class TableData {
 
             //SystemLog.println("newData.getTransactionNo().getTransactionNo()=" + newData.getTransactionNo().getTransactionNo());
             //SystemLog.println("targetTn.getTransactionNo()=" + targetTn.getTransactionNo());
-            TransactionNo newDataTransactionNo = newData.getTransactionNo();
-            if (newDataTransactionNo.getTransactionNo() == targetTn.getTransactionNo() && newDataTransactionNo.isRollback() == false) {
+            if (this.newTransactionNo.isCommited() == true) {
                 if (newData.isDeletedData()) {
                     return null;
                 }
                 return newData;
             }
-    
-            
-            if (newDataTransactionNo.isCommited() == true) {
+
+            if (this.newTransactionNo.getTransactionNo() == targetTn.getTransactionNo() && this.newTransactionNo.isRollback() == false) {
                 if (newData.isDeletedData()) {
                     return null;
                 }
                 return newData;
             }
-    
-            if (newDataTransactionNo.isCommited() == false) {
+
+            if (this.newTransactionNo.isCommited() == false) {
                 if (oldData == null) return null;
                 if (oldData.isDeletedData()) {
                     return null;
@@ -126,12 +131,14 @@ public class TableData {
         writeLock.lock();
         try {
 
-            if (newData.getTransactionNo().isRollback() == false && newData.getTransactionNo().isCommited() == false) {
-                if (newData.getTransactionNo().getTransactionNo() == tn.getTransactionNo()) {
+            if (this.newTransactionNo.isRollback() == false && this.newTransactionNo.isCommited() == false) {
+                if (this.newTransactionNo.getTransactionNo() == tn.getTransactionNo()) {
                     tableDataTransfer.setTransactionNo(tn);
                     tableDataTransfer.saveTmpData();
                     tn.putTableData(this);
-                    newData = tableDataTransfer;
+                    this.newData = tableDataTransfer;
+                    this.newTransactionNo = this.newData.getTransactionNo();
+
                     return;
                 } else {
                     throw new DuplicateUpdateException("duplicate mod data");
@@ -142,11 +149,16 @@ public class TableData {
             tableDataTransfer.saveTmpData();
             tn.putTableData(this);
 
-            if (newData.getTransactionNo().isRollback() == true) {
-                newData = tableDataTransfer;
-            } else if (newData.getTransactionNo().isCommited() == true) {
-                oldData = newData;
-                newData = tableDataTransfer;
+            if (this.newTransactionNo.isRollback() == true) {
+                this.newData = tableDataTransfer;
+                this.newTransactionNo = this.newData.getTransactionNo();
+
+            } else if (this.newTransactionNo.isCommited() == true) {
+                this.oldData = newData;
+                this.oldTransactionNo = this.oldData.getTransactionNo();
+                
+                this.newData = tableDataTransfer;
+                this.newTransactionNo = this.newData.getTransactionNo();
             }
         } finally {
             writeLock.unlock();
@@ -158,12 +170,14 @@ public class TableData {
         writeLock.lock();
         try {
 
-            if (newData.getTransactionNo().isRollback() == false && newData.getTransactionNo().isCommited() == false) {
-                if (newData.getTransactionNo().getTransactionNo() == tn.getTransactionNo()) {
+            if (this.newTransactionNo.isRollback() == false && this.newTransactionNo.isCommited() == false) {
+                if (this.newTransactionNo.getTransactionNo() == tn.getTransactionNo()) {
                     tableDataTransfer.setTransactionNo(tn);
                     tableDataTransfer.delete();
                     tn.putTableData(this);
-                    newData = tableDataTransfer;
+                    this.newData = tableDataTransfer;
+                    this.newTransactionNo = this.newData.getTransactionNo();
+
                     return;
                 } else {
                     throw new DuplicateDeleteException("duplicate mod data");
@@ -174,11 +188,16 @@ public class TableData {
             tableDataTransfer.delete();
             tn.putTableData(this);
 
-            if (newData.getTransactionNo().isRollback() == true) {
-                newData = tableDataTransfer;
-            } else if (newData.getTransactionNo().isCommited() == true) {
-                oldData = newData;
-                newData = tableDataTransfer;
+            if (this.newTransactionNo.isRollback() == true) {
+                this.newData = tableDataTransfer;
+                this.newTransactionNo = this.newData.getTransactionNo();
+
+            } else if (this.newTransactionNo.isCommited() == true) {
+                this.oldData = this.newData;
+                this.oldTransactionNo = this.oldData.getTransactionNo();
+
+                this.newData = tableDataTransfer;
+                this.newTransactionNo = this.newData.getTransactionNo();
             }
         } finally {
             writeLock.unlock();

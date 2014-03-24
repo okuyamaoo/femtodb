@@ -1,13 +1,16 @@
 package femtodb.core.table;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import femtodb.core.*;
 import femtodb.core.table.data.*;
 import femtodb.core.util.*;
+import femtodb.core.accessor.*;
 import femtodb.core.table.transaction.*;
 import femtodb.core.accessor.parameter.*;
 import femtodb.core.table.index.*;
@@ -19,14 +22,14 @@ import femtodb.core.accessor.*;
  *
  * @author Takahiro Iwase
  * @license Apache License 2.0 
- */
-public class DefaultTable extends AbstractTable implements ITable {
+ */ 
+public class DefaultTable extends AbstractTable implements ITable, Serializable {
 
     private TableInfo tableInfo = null;
     public String[] indexColumnNames = null;
 
     public DataMap dataMap = null;
-    public Map<String, IndexMap> indexsMap = null;
+    public transient Map<String, IndexMap> indexsMap = null;
     public Map<String, TableData> uniqueKeyMap = null;
 
     private ReadWriteLock lock = new ReentrantReadWriteLock(true);
@@ -179,19 +182,99 @@ public class DefaultTable extends AbstractTable implements ITable {
         return this.dataMap.size();
     }
 
-    public boolean rebuildIndex() {
-        Iterator indexsIterator = indexsMap.entrySet().iterator();
-        while(indexsIterator.hasNext()) {
-            Map.Entry targetEntry = (Map.Entry)indexsIterator.next();
-            IndexMap map = (IndexMap)targetEntry.getValue();
-            map.rebuildIndex();
+    public boolean addIndexColumn(String columnName, IColumnType indexType) {
+        if (indexType.getType() == IColumnType.VARCHAR_COLUMN) { 
+            // FullMatch用Index
+            this.indexsMap.put(columnName, new FullMatchIndexMap(columnName, new CharacterIndexComparator(), dataMap));
+        } else if (indexType.getType() == IColumnType.NUMBER_COLUMN) {
+            // NumberRange用Index
+            this.indexsMap.put(columnName, new NumberRangeIndexMap(columnName, new NumberIndexComparator(), dataMap));
+        } else if (indexType.getType() == IColumnType.TEXT_COLUMN) {
+            // TextSearch用Index
+            this.indexsMap.put(columnName, new TextMatchIndexMap(columnName, new CharacterIndexComparator(), dataMap));
         }
-        
-        QueryOptimizer.lastRebuildIndexInfo.put(tableInfo.tableName, System.nanoTime());
+
+        String[] newIndexColumnNames = new String[this.indexColumnNames.length+1];
+        newIndexColumnNames[0] = columnName;
+        for (int idx = 1; idx < newIndexColumnNames.length; idx++) {
+            newIndexColumnNames[idx] = this.indexColumnNames[idx-1];
+        }
+        this.indexColumnNames = newIndexColumnNames;
         return true;
     }
 
+    public boolean addIndexColumnInfo(String columnName, IColumnType indexType) throws TableInfoException {
+        tableInfo.addTableColumnInfo(columnName, indexType);
+        return true;
+    }
 
+    public boolean rebuildIndex(QueryOptimizer queryOptimizer) {
+        long dataCount = 0;
+
+        Iterator indexsIterator = indexsMap.entrySet().iterator();
+        try {
+            while(indexsIterator.hasNext()) {
+                Map.Entry targetEntry = (Map.Entry)indexsIterator.next();
+                IndexMap map = (IndexMap)targetEntry.getValue();
+                map.rebuildIndex();
+                dataCount++;
+                if ((dataCount % 100L) == 0L) {
+    
+                    try {
+                        Thread.sleep(100);
+                    } catch (Exception e) {}
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        queryOptimizer.lastRebuildIndexInfo.put(tableInfo.tableName, System.nanoTime());
+        return true;
+    }
+
+    public boolean createAllDataIndex(TransactionNo transactionNo) {
+        
+        DataMapIterator dataMapIterator = dataMap.getIterator();
+        if (this.indexsMap == null) this.indexsMap = new ConcurrentHashMap<String, IndexMap>();
+
+        long dataCount = 0L;
+        while(dataMapIterator.hasNext()) {
+
+            dataMapIterator.next();
+            TableData tableData = dataMapIterator.getValue();
+
+            for (int idx = 0; idx < this.getIndexColumnNames().length; idx++){
+
+                IndexMap index = this.getIndexsMap().get(this.getIndexColumnNames()[idx]);
+                if (index == null) {
+                    if (this.tableInfo.getColumnType(this.getIndexColumnNames()[idx]).getType() == IColumnType.VARCHAR_COLUMN) { 
+                        // FullMatch用Index
+                        this.indexsMap.put(this.getIndexColumnNames()[idx], new FullMatchIndexMap(this.getIndexColumnNames()[idx], new CharacterIndexComparator(), dataMap));
+                    } else if (this.tableInfo.getColumnType(this.getIndexColumnNames()[idx]).getType() == IColumnType.NUMBER_COLUMN) {
+                        // NumberRange用Index
+                        this.indexsMap.put(this.getIndexColumnNames()[idx], new NumberRangeIndexMap(this.getIndexColumnNames()[idx], new NumberIndexComparator(), dataMap));
+                    } else if (this.tableInfo.getColumnType(this.getIndexColumnNames()[idx]).getType() == IColumnType.TEXT_COLUMN) {
+                        // TextSearch用Index
+                        this.indexsMap.put(this.getIndexColumnNames()[idx], new TextMatchIndexMap(this.getIndexColumnNames()[idx], new CharacterIndexComparator(), dataMap));
+                    }
+                    index = this.getIndexsMap().get(this.getIndexColumnNames()[idx]);
+                }
+                if (tableData.newTransactionNo.isCommited()) {
+                    index.putData(tableData.newTransactionNo, tableData.oid, tableData);
+                } else if (tableData.oldTransactionNo.isCommited()) {
+                    index.putData(tableData.oldTransactionNo, tableData.oid, tableData);
+                }
+
+            }
+            dataCount++;
+            if ((dataCount % 1000L) == 0L) {
+                try {
+                    Thread.sleep(50);
+                } catch (Exception e) {}
+            }
+        }
+        return true;
+    }
 
     public boolean cleanDeletedData() {
         DataMapIterator dataMapIterator = dataMap.getIterator();
@@ -213,7 +296,7 @@ public class DefaultTable extends AbstractTable implements ITable {
                     deleted = true;
                 } else {
                     if (newData != null && newData.getTransactionNo().isCommited() == false) {
-                        if (oldData.isDeletedData()) {
+                        if (oldData != null && oldData.isDeletedData()) {
                             dataMap.remove(dataMapIterator.getKey());
                             deleted = true;
                         }
@@ -233,4 +316,8 @@ public class DefaultTable extends AbstractTable implements ITable {
         return true;
     }
 
+    public String toString() {
+        System.out.println(this.dataMap);
+        return "";
+    }
 }

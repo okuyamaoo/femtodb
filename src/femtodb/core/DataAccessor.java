@@ -1,6 +1,7 @@
 package femtodb.core;
 
 
+import java.io.*;
 import java.util.*;
 
 import java.util.concurrent.locks.Lock;
@@ -28,6 +29,8 @@ import femtodb.core.accessor.parameter.*;
 public class DataAccessor {
 
     private TableManager tableManager = null;
+    private QueryOptimizer queryOptimizer = QueryOptimizer.getNewInstance();
+    private TransactionNoManager transactionNoManager = TransactionNoManager.getNewInstance();
     private DataOperationLogManager dataOperationLogManager = null;
 
     private ReadWriteLock lock = new ReentrantReadWriteLock(true);
@@ -44,33 +47,86 @@ public class DataAccessor {
     }
 
     public DataAccessor(String[] bootArgs) throws Exception {
-        if (bootArgs != null) {
+        this(bootArgs, false);
+    }
+    
+    public DataAccessor(String[] bootArgs, boolean backUpProccess) throws Exception {
+
+        if (backUpProccess == false && bootArgs != null) {
             FemtoDBConstants.build(bootArgs);
         }
 
-        TransactionNoManager.initTransactionNoManager();
-        TableManager.initOid();
-        this.tableManager = new TableManager();
-        // データ復元
-        loadOperationLog();
-    }
+        File objFile = new File(FemtoDBConstants.TRANSACTION_LOG + ".obj");
+        if (objFile.exists()) {
+            StoreTableManagerFolder storeTableManagerFolder = null;
+            FileInputStream inFile = null;
+            ObjectInputStream inObject = null;
+            try {
+                inFile = new FileInputStream(objFile); 
+                inObject = new ObjectInputStream(inFile);
 
-    public DataAccessor(String[] bootArgs, long setTransactionNo, long setOid) throws Exception {
-        if (bootArgs != null) {
-            FemtoDBConstants.build(bootArgs);
+                storeTableManagerFolder = (StoreTableManagerFolder)inObject.readObject();
+                inObject.close();
+                inFile.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+                try {
+                    storeTableManagerFolder = null;
+                    if (inObject == null) inObject.close();
+                    if (inFile == null) inFile.close();
+                } catch (Exception e2) {}
+
+                try {
+                    File oldObjFile = new File(FemtoDBConstants.TRANSACTION_LOG + ".obj.old");
+                    if (oldObjFile.exists()) {
+                        inFile = new FileInputStream(oldObjFile);
+                        inObject = new ObjectInputStream(inFile);
+                        storeTableManagerFolder = (StoreTableManagerFolder)inObject.readObject();
+                        inObject.close();
+                        inFile.close();
+                    }
+                } catch (Exception e2) {
+                    storeTableManagerFolder = null;
+                }
+            }
+            
+            if (storeTableManagerFolder != null) {
+                transactionNoManager.initTransactionNoManager(storeTableManagerFolder.getTransactionNoObj(), storeTableManagerFolder.getTransactionStatusMapObj());
+    
+                this.tableManager = storeTableManagerFolder.getTableManager();
+                List<TableInfo> list = this.tableManager.getTableInfoList();
+
+                // データ復元
+                loadOperationLog(storeTableManagerFolder.getStoredLogNo());
+                if (list != null && list.size() > 0) {
+                    for (TableInfo table : list) {
+                        this.createAllDataIndex(table.tableName);
+                    }
+                }
+            } else {
+                // 通常の復元シーケンス
+                transactionNoManager.initTransactionNoManager();
+                TableManager.initOid();
+                this.tableManager = new TableManager();
+                // データ復元
+                loadOperationLog(-1L);
+            }
+        } else {
+            transactionNoManager.initTransactionNoManager();
+            TableManager.initOid();
+            this.tableManager = new TableManager();
+            // データ復元
+            loadOperationLog(-1L);
         }
-
-        TransactionNoManager.initTransactionNoManager(setTransactionNo);
-        TableManager.initOid(setOid);
-        this.tableManager = new TableManager();
-        // データ復元
-        loadOperationLog();
+        
     }
+
 
     // 操作ログよりデータを復元
-    private void loadOperationLog() throws Exception {
+    private void loadOperationLog(long readLogNo) throws Exception {
+
         //QueryOptimizerへTableManagerを渡す
-        QueryOptimizer.setTableManager(this.tableManager);
+        queryOptimizer.setTableManager(this.tableManager);
 
         // 復元処理中にログを出力するのは無意味なのでここでログ出力を抑制
         boolean writeConf = FemtoDBConstants.TRANSACTION_LOG_WRITE;
@@ -78,7 +134,7 @@ public class DataAccessor {
 
         // データをロード
         this.dataOperationLogManager = new DataOperationLogManager(FemtoDBConstants.TRANSACTION_LOG);
-        this.dataOperationLogManager.loadOperationLog(this);
+        this.dataOperationLogManager.loadOperationLog(this, readLogNo);
 
         // ログをもとに戻す
         if (writeConf == true) FemtoDBConstants.TRANSACTION_LOG_WRITE = true;
@@ -87,6 +143,7 @@ public class DataAccessor {
         if (list != null && list.size() > 0) {
             for (TableInfo table : list) {
                 rebuildIndex(table.tableName);
+                createAllDataIndex(table.tableName);
             }
         }
         rebuildTableDataWorker = new RebuildTableDataWorker(tableManager, this);
@@ -95,8 +152,14 @@ public class DataAccessor {
         System.gc();
     }
 
+
+    public TransactionNo createAnonymousTransaction() {
+        TransactionNo tn = transactionNoManager.createAnonymousTransactionNo();
+        return tn;
+    }
+
     public TransactionNo createTransaction() {
-        TransactionNo tn = TransactionNoManager.createTransactionNo();
+        TransactionNo tn = transactionNoManager.createTransactionNo();
         logWriteLock.lock();
         try {
             tansactionLogWrite(Integer.valueOf(1));
@@ -108,13 +171,13 @@ public class DataAccessor {
 
 
     public boolean commitTransaction(long transactionNo) {
-        TransactionNo tn = TransactionNoManager.getTransactionNoObejct(transactionNo);
+        TransactionNo tn = transactionNoManager.getTransactionNoObejct(transactionNo);
         if (tn == null) return false;
         return commitTransaction(tn);
     }
 
     public boolean commitTransaction(TransactionNo transactionNo) {
-        boolean ret = TransactionNoManager.commitTransaction(transactionNo);
+        boolean ret = transactionNoManager.commitTransaction(transactionNo);
         logWriteLock.lock();
         try {
             tansactionLogWrite(Integer.valueOf(2), transactionNo);
@@ -124,8 +187,44 @@ public class DataAccessor {
         }
     }
 
+    public boolean halfCommitTransaction(long transactionNo) {
+        TransactionNo tn = transactionNoManager.getTransactionNoObejct(transactionNo);
+        if (tn == null) return false;
+        return halfCommitTransaction(tn);
+    }
+
+    public boolean halfCommitTransaction(TransactionNo transactionNo) {
+        boolean ret = transactionNoManager.halfCommitTransaction(transactionNo);
+        logWriteLock.lock();
+        try {
+            tansactionLogWrite(Integer.valueOf(211), transactionNo);
+        } finally {
+            logWriteLock.unlock();
+            return ret;
+        }
+    }
+
+
+    public boolean fixCommitTransaction(long transactionNo) {
+        TransactionNo tn = transactionNoManager.getTransactionNoObejct(transactionNo);
+        if (tn == null) return false;
+        return fixCommitTransaction(tn);
+    }
+
+    public boolean fixCommitTransaction(TransactionNo transactionNo) {
+        boolean ret = transactionNoManager.fixCommitTransaction(transactionNo);
+        logWriteLock.lock();
+        try {
+            tansactionLogWrite(Integer.valueOf(212), transactionNo);
+        } finally {
+            logWriteLock.unlock();
+            return ret;
+        }
+    }
+
+
     public boolean rollbackTransaction(long transactionNo) {
-        TransactionNo tn = TransactionNoManager.getTransactionNoObejct(transactionNo);
+        TransactionNo tn = transactionNoManager.getTransactionNoObejct(transactionNo);
         if (tn == null) return false;
 
         return rollbackTransaction(tn);
@@ -133,7 +232,7 @@ public class DataAccessor {
 
     public boolean rollbackTransaction(TransactionNo transactionNo) {
 
-        boolean ret = TransactionNoManager.rollbackTransaction(transactionNo);
+        boolean ret = transactionNoManager.rollbackTransaction(transactionNo);
         logWriteLock.lock();
         try {
             tansactionLogWrite(Integer.valueOf(3), transactionNo);
@@ -144,12 +243,12 @@ public class DataAccessor {
     }
 
     public boolean endTransaction(long transactionNo) {
-        return endTransaction(TransactionNoManager.getTransactionNoObejct(transactionNo));
+        return endTransaction(transactionNoManager.getTransactionNoObejct(transactionNo));
     }
 
     public boolean endTransaction(TransactionNo transactionNo) {
 
-        boolean ret = TransactionNoManager.endTransaction(transactionNo);
+        boolean ret = transactionNoManager.endTransaction(transactionNo);
         logWriteLock.lock();
         try {
             tansactionLogWrite(Integer.valueOf(4), transactionNo);
@@ -160,18 +259,18 @@ public class DataAccessor {
     }
 
     public boolean existsTransactionNo(long transactionNo) {
-        return TransactionNoManager.existsTransactionNoObejct(transactionNo);
+        return transactionNoManager.existsTransactionNoObejct(transactionNo);
     }
 
 
     public List<TransactionNo> getTransactionNoList() {
-        return TransactionNoManager.getTransactionNoList();
+        return transactionNoManager.getTransactionNoList();
     }
 
 
     public int createTable(TableInfo tableInfo) {
 
-        TableAccessor tableDataAccessor = new TableAccessor(this.tableManager);
+        TableAccessor tableDataAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
 
         int ret = tableDataAccessor.create(tableInfo);
         if (ret == 1) {
@@ -189,7 +288,7 @@ public class DataAccessor {
 
     public TableInfo getTable(String tableName) {
 
-        TableAccessor tableDataAccessor = new TableAccessor(this.tableManager);
+        TableAccessor tableDataAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
         TableInfo ret = tableDataAccessor.get(tableName);
         return ret;
     }
@@ -197,19 +296,19 @@ public class DataAccessor {
 
 
     public List<TableInfo> getTableList() {
-        TableAccessor tableAccessor = new TableAccessor(this.tableManager);
+        TableAccessor tableAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
         return tableAccessor.getTableList();
     }
 
 
     public TableInfo getTableInfo(String tableName) {
-        TableAccessor tableAccessor = new TableAccessor(this.tableManager);
+        TableAccessor tableAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
         return tableAccessor.getTableInfo(tableName);
     }
 
 
     public TableInfo removeTable(String tableName) {
-        TableAccessor tableAccessor = new TableAccessor(this.tableManager);
+        TableAccessor tableAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
         TableInfo tableInfo = tableAccessor.remove(tableName);
         if (tableInfo == null) return null;
         tansactionLogWrite(Integer.valueOf(99), tableName);
@@ -217,35 +316,48 @@ public class DataAccessor {
     }
 
 
+    public boolean addIndexColumn(TableInfo tableInfo) {
+        TableAccessor tableAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
+        tableAccessor.addIndexColumn(tableInfo);
+
+        return true;
+    }
+
+    public boolean createAllDataIndex(String tableName) {
+        // 本メソッドで作成されるトランザクションは全てAnonymousTransactionNoとなる。
+        // See:TableAccessor.java     public boolean createAllDataIndex(String tableName) 
+        TableAccessor tableAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
+        return tableAccessor.createAllDataIndex(tableName);
+    }
 
     public boolean rebuildIndex(String tableName) {
 
-        TableAccessor tableAccessor = new TableAccessor(this.tableManager);
+        TableAccessor tableAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
         return tableAccessor.rebuildIndex(tableName);
     }
 
 
     public boolean cleanDeletedData(String tableName) {
 
-        TableAccessor tableAccessor = new TableAccessor(this.tableManager);
+        TableAccessor tableAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
         return tableAccessor.cleanDeletedData(tableName);
     }
 
 
     public int insertTableData(String tableName, long transactionNo, TableDataTransfer tableDataTransfer) throws InsertException {
-        return insertTableData(tableName, TransactionNoManager.getTransactionNoObejct(transactionNo), tableDataTransfer, null);
+        return insertTableData(tableName, transactionNoManager.getTransactionNoObejct(transactionNo), tableDataTransfer, null);
     }
 
 
     public int insertTableData(String tableName, long transactionNo, TableDataTransfer tableDataTransfer, String uniqueKey) throws InsertException {
-        return insertTableData(tableName, TransactionNoManager.getTransactionNoObejct(transactionNo), tableDataTransfer, uniqueKey);
+        return insertTableData(tableName, transactionNoManager.getTransactionNoObejct(transactionNo), tableDataTransfer, uniqueKey);
     }
 
     public int insertTableData(String tableName, TransactionNo transactionNo, TableDataTransfer tableDataTransfer) throws InsertException {
         return insertTableData(tableName, transactionNo, tableDataTransfer, null);
     }
     public int insertTableData(String tableName, TransactionNo transactionNo, TableDataTransfer tableDataTransfer, String uniqueKey) throws InsertException {
-        InsertTableAccessor insertTableAccessor = new InsertTableAccessor(this.tableManager);
+        InsertTableAccessor insertTableAccessor = new InsertTableAccessor(this.tableManager, queryOptimizer);
         try {
             int ret = -1;
             if (uniqueKey == null) {
@@ -258,7 +370,7 @@ public class DataAccessor {
                 tansactionLogWrite(Integer.valueOf(6), tableName, transactionNo, tableDataTransfer, uniqueKey);
 
                 // データの登録のQptimizerへ登録
-                QueryOptimizer.lastUpdateAccessTimeInfo.put(tableName, System.nanoTime());
+                queryOptimizer.lastUpdateAccessTimeInfo.put(tableName, System.nanoTime());
             } finally {
                 logWriteLock.unlock();
                 return ret;
@@ -269,8 +381,18 @@ public class DataAccessor {
         }
     }
 
+    public TableDataTransfer getTableData(String tableName, String uniqueKey, long transactionNo) {
+        return getTableData(tableName, uniqueKey, transactionNoManager.getTransactionNoObejct(transactionNo));
+    }
+
+    public TableDataTransfer getTableData(String tableName, String uniqueKey, TransactionNo transactionNo) {
+        ITable table = this.tableManager.getTableData(tableName);
+        if (table == null) return null;
+        return table.getTableData4UniqueKey(transactionNo, uniqueKey);
+    }
+
     public List<TableDataTransfer> selectTableDataList(SelectParameter selectParameter, long transactionNo) throws SelectException {
-        ResultStruct resultStruct = selectTableData(selectParameter, TransactionNoManager.getTransactionNoObejct(transactionNo));
+        ResultStruct resultStruct = selectTableData(selectParameter, transactionNoManager.getTransactionNoObejct(transactionNo));
         return resultStruct.getResultList();
     }
 
@@ -280,11 +402,11 @@ public class DataAccessor {
     }
 
     public ResultStruct selectTableData(SelectParameter selectParameter, long transactionNo) throws SelectException {
-        return selectTableData(selectParameter, TransactionNoManager.getTransactionNoObejct(transactionNo));
+        return selectTableData(selectParameter, transactionNoManager.getTransactionNoObejct(transactionNo));
     }
 
     public ResultStruct selectTableData(SelectParameter selectParameter, TransactionNo transactionNo) throws SelectException {
-        SelectTableAccessor selectTableAccessor = new SelectTableAccessor(this.tableManager);
+        SelectTableAccessor selectTableAccessor = new SelectTableAccessor(this.tableManager, queryOptimizer);
     
         ResultStruct resultStruct = null;
         resultStruct = selectTableAccessor.select(selectParameter, transactionNo);
@@ -294,13 +416,13 @@ public class DataAccessor {
 
 
     public int updateTableData(UpdateParameter updateParameter, long transactionNo) throws UpdateException {
-        return updateTableData(updateParameter, TransactionNoManager.getTransactionNoObejct(transactionNo));
+        return updateTableData(updateParameter, transactionNoManager.getTransactionNoObejct(transactionNo));
     }
 
     public int updateTableData(UpdateParameter updateParameter, TransactionNo transactionNo) throws UpdateException {
-        UpdateTableAccessor updateTableAccessor = new UpdateTableAccessor(this.tableManager);
+        UpdateTableAccessor updateTableAccessor = new UpdateTableAccessor(this.tableManager, queryOptimizer);
         try {
-            QueryOptimizer.lastUpdateAccessTimeInfo.put(updateParameter.getTableName(), System.nanoTime());
+            queryOptimizer.lastUpdateAccessTimeInfo.put(updateParameter.getTableName(), System.nanoTime());
             int ret = updateTableAccessor.update(updateParameter, transactionNo);
 
             logWriteLock.lock();
@@ -321,13 +443,14 @@ public class DataAccessor {
     }
 
     public int deleteTableData(DeleteParameter deleteParameter, long transactionNo) throws DeleteException {
-        return deleteTableData(deleteParameter, TransactionNoManager.getTransactionNoObejct(transactionNo));
+        return deleteTableData(deleteParameter, transactionNoManager.getTransactionNoObejct(transactionNo));
     }
 
     public int deleteTableData(DeleteParameter deleteParameter, TransactionNo transactionNo) throws DeleteException {
-        DeleteTableAccessor deleteTableAccessor = new DeleteTableAccessor(this.tableManager);
+
+        DeleteTableAccessor deleteTableAccessor = new DeleteTableAccessor(this.tableManager, queryOptimizer);
         try {
-            QueryOptimizer.lastUpdateAccessTimeInfo.put(deleteParameter.getTableName(), System.nanoTime());
+            queryOptimizer.lastUpdateAccessTimeInfo.put(deleteParameter.getTableName(), System.nanoTime());
             int ret = deleteTableAccessor.delete(deleteParameter, transactionNo);
 
             logWriteLock.lock();
@@ -342,11 +465,42 @@ public class DataAccessor {
             this.rollbackTransaction(transactionNo);
             throw new DeleteException("Duplicate delete data !! Auto rollback executed", due);
         } catch (Exception e) {
+            e.printStackTrace();
             this.rollbackTransaction(transactionNo);
             throw new DeleteException("Unknow Exception !! Auto rollback executed", e);
         }
     }
 
+    public boolean storeTableObject() {
+        logWriteLock.lock();
+        try {
+            StoreTableManagerFolder folder = new StoreTableManagerFolder(this.dataOperationLogManager.getLogNo());
+
+            folder.setTableManager(this.tableManager);
+            folder.setTransactionNoObj(transactionNoManager.getNoObject());
+            folder.setTransactionStatusMapObj(transactionNoManager.getStatusMapObject());
+
+            /*File nowObjFile = new File(FemtoDBConstants.TRANSACTION_LOG + ".obj");
+            File changeFile = null;
+            if (nowObjFile.exists()) {
+                changeFile = new File(FemtoDBConstants.TRANSACTION_LOG + ".obj.old");
+                nowObjFile.renameTo(changeFile);
+            }*/
+
+            FileOutputStream objFile = new FileOutputStream(FemtoDBConstants.TRANSACTION_LOG + ".obj");
+            ObjectOutputStream outObj = new ObjectOutputStream(objFile);
+            outObj.writeObject(folder);
+            outObj.close();
+            objFile.close();
+            //if (changeFile != null) changeFile.delete();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            logWriteLock.unlock();
+        }
+        return true;
+    }
 
     // 操作ログ出力
     private boolean tansactionLogWrite(Object... logObjects) {
@@ -370,19 +524,31 @@ public class DataAccessor {
             try {
                 this.setPriority(1);
                 while (true) {
+                
                     try {
                         List<TableInfo> list = tableManager.getTableInfoList();
+
                         for (TableInfo info : list) {
                             this.baseInstance.rebuildIndex(info.tableName);
-                            Thread.sleep(3000);
+                            Thread.sleep(10000);
                         }
+
                         Thread.sleep(7000);
                         for (TableInfo info : list) {
                             this.baseInstance.cleanDeletedData(info.tableName);
                             Thread.sleep(3000);
                         }
                         Thread.sleep(7000);
-                    } catch (Exception e) {
+
+                        // TODO:自動バックアップは一時的に停止
+                        /*System.out.println("start");
+                        long objStoreStart = System.nanoTime();
+                        if (!this.baseInstance.storeTableObject()) System.out.println("error");
+                        long objStoreEnd = System.nanoTime();
+                        System.out.println(" Stored time" + ((objStoreEnd - objStoreStart) / 1000 /1000) + "ms");
+                        System.out.println("end");*/
+                    } catch (Throwable e) {
+                        e.printStackTrace();
                     }
                     
                 }

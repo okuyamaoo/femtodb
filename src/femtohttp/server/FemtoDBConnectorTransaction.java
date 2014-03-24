@@ -53,12 +53,13 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
     }
 
     /** 
-     * トランザクションをCommitもしくはRollbackする.<br>
+     * トランザクションをCommitもしくはRollbackもしくはHalfCommitもしくはFixCommitする.<br>
      * 返却値として成否が返される.<br>
      * 一度Commit、Rollbackを実行したTransactionNoは無効となる<br>
      * 本リクエストはパラメータとして以下を必要とする.<br>
      * "transactionno" 対象とするトランザクションの番号 <br>
-     * "method" "commit"及び、"rollback"を指定<br>
+     * "method" "commit" or "rollback" or "halfcommit" or "fixcommit"を指定<br>
+
      *<br><br>
      * 返却値はJSONフォーマットで{"result":"true"}となり左辺の文字列は"true" or "false"である<br>
      *<br>
@@ -103,16 +104,26 @@ public class FemtoDBConnectorTransaction  extends HttpServlet {
         if (method.trim().equals("commit")) {
             // commit処理
             result = FemtoHttpServer.dataAccessor.commitTransaction(transactioNoLong);
+            FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
         } else if (method.trim().equals("rollback")) {
             // rollback処理
             result = FemtoHttpServer.dataAccessor.rollbackTransaction(transactioNoLong);
+            FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
+        } else if (method.trim().equals("halfcommit")) {
+            // HalfCommit処理
+            result = FemtoHttpServer.dataAccessor.halfCommitTransaction(transactioNoLong);
+        } else if (method.trim().equals("fixcommit")) {
+            // FixCommit処理
+            result = FemtoHttpServer.dataAccessor.fixCommitTransaction(transactioNoLong);
+            if (result == true) {
+                FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
+            }
         } else {
             response.setStatus(400);
             response.setContentType("text/html; charset=utf-8");
             response.getWriter().println("'method' Format violation.");
             return;
         }
-        FemtoHttpServer.dataAccessor.endTransaction(transactioNoLong);
 
         StringBuilder strBuf = new StringBuilder();
         strBuf.append("{\"result\":\"");

@@ -22,7 +22,7 @@ import femtodb.core.accessor.parameter.*;
  * @author Takahiro Iwase
  * @license Apache License 2.0 
  */
-public class DataMap extends BaseMap {
+public class DataMap extends BaseMap implements Serializable {
     
 
     public DataMap() {
@@ -47,5 +47,9 @@ public class DataMap extends BaseMap {
 
     public int size() {
         return super.size();
+    }
+    public String toString() {
+        super.toString();
+        return "";
     }
 }

@@ -24,9 +24,12 @@ public class SelectTableAccessor {
 
 
     TableManager tableManager = null;
+    QueryOptimizer queryOptimizer = null;
 
-    public SelectTableAccessor(TableManager tableManager) {
+    public SelectTableAccessor(TableManager tableManager, QueryOptimizer queryOptimizer) {
+    
         this.tableManager = tableManager;
+        this.queryOptimizer = queryOptimizer;
     }
 
     public ResultStruct select(SelectParameter selectParameter, TransactionNo transactionNo) throws SelectException {
@@ -35,7 +38,8 @@ public class SelectTableAccessor {
         int baseResultCount = 0;
 
         Thread th = Thread.currentThread();
-        Object syncObj = QueryOptimizer.getParallelsSyncObject(transactionNo, selectParameter, th);
+
+        Object syncObj = queryOptimizer.getParallelsSyncObject(transactionNo, selectParameter, th);
 
         try {
             synchronized(syncObj) {
@@ -78,7 +82,7 @@ public class SelectTableAccessor {
         } catch (Exception e) {
             throw new SelectException(e);
         } finally {
-            QueryOptimizer.removeThreadGroupData(th);
+            queryOptimizer.removeThreadGroupData(th);
         }
     }
 
@@ -89,6 +93,8 @@ public class SelectTableAccessor {
      */
     protected List<TableDataTransfer> select(String tableName, TransactionNo transactionNo) {
         ITable table = this.tableManager.getTableData(tableName);
+
+        if (table == null) return new ArrayList();
         List<TableDataTransfer> allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
 
         long start = System.nanoTime();
@@ -116,10 +122,12 @@ public class SelectTableAccessor {
      */
     protected List<TableDataTransfer> select(String tableName, SelectParameter selectParameter, TransactionNo transactionNo) throws Exception {
         ITable table = this.tableManager.getTableData(tableName);
+        if (table == null) return new ArrayList();
+
         List<TableDataTransfer> allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
 
         // 条件に対してオプティマイザがIndex条件などを加味し適応済みのIteratorを返す
-        TableIterator iterator = QueryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
+        TableIterator iterator = queryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
 
         NormalWhereParameter normalWhereParameter = selectParameter.nextNormalWhereParameter();
         NormalWhereExecutor normalWhereExecutor = null;
@@ -135,7 +143,7 @@ public class SelectTableAccessor {
             if (transactionNo.modTableFolder != null && transactionNo.modTableFolder.containsKey(tableName)) {
 
                 normalWhereExecutor.execute(iterator, transactionNo, allData);
-            } else if (!QueryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
+            } else if (!queryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
 
                 normalWhereExecutor.execute(iterator, transactionNo, allData);
             } else if (!selectParameter.existIndexWhereParameter()) {
@@ -151,11 +159,11 @@ public class SelectTableAccessor {
                         allData.add(tableDataTransfer);
                     }
 
-                    if (!QueryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
+                    if (!queryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
                         // データを収集中にデータ追加が動きIndexが変わってしまっている。
                         allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
     
-                        iterator = QueryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
+                        iterator = queryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
                         normalWhereExecutor.execute(iterator, transactionNo, allData);
                     }
                 }
