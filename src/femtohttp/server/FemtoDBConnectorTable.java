@@ -141,6 +141,7 @@ public class FemtoDBConnectorTable  extends HttpServlet {
             }
             result = FemtoHttpServer.dataAccessor.createTable(tableInfo);
         } catch (Exception ee) {
+
             response.setStatus(500);
             response.setContentType("text/html; charset=utf-8");
             response.getWriter().println("errormessage:\"An unknown error has occurred\"");

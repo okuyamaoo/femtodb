@@ -307,6 +307,7 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
                     FemtoHttpServer.dataAccessor.insertTableData(tableName, tansactionNo, tableDataTransfer);
                 }
             } catch (ClassCastException cce) {
+                cce.printStackTrace();
                 // 登録データがString=Stringの形式でない
                 response.setContentType("text/html");
                 response.setStatus(400);

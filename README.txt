@@ -162,7 +162,23 @@ MVCCモデルを参考したトランザクションが実装されており、�
   設定例) -dictionary ./user_dictionary.txt
   詳しくは以下のURLを参照
    公式ページ:http://www.atilika.org/
-   
+
+・JVMのOld領域が減ってきた際にマイナーGCを優先する設定。
+  デフォルトでONになっており、old領域を80%以上利用すると
+  クエリースループットを落とし、FullGCでのStop the worldの発生を抑制する。
+  ※本設定をfalseとすると、Old領域が不足してきてもクエリーの実行を優先する。
+  -qmc true/false
+   デフォルト:rrue
+  設定例) -qmc false
+
+・JVMのOld領域が減ってきた際にマイナーGCを優先する設定を行なった際に
+  Old領域を利用している閾値を100分率で設定する。
+  ※本設定は「-qmc true」となっている場合のみ有効
+  -josul 99までの数値
+   デフォルト:80
+  設定例) -josul 78
+
+
 
 
 設定例)

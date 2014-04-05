@@ -48,13 +48,10 @@ public class DataAccessor {
         this(null);
     }
 
-    public DataAccessor(String[] bootArgs) throws Exception {
-        this(bootArgs, false);
-    }
-    
-    public DataAccessor(String[] bootArgs, boolean backUpProccess) throws Exception {
 
-        if (backUpProccess == false && bootArgs != null) {
+    public DataAccessor(String[] bootArgs) throws Exception {
+
+        if (bootArgs != null) {
             this.bootArgs = bootArgs;
             FemtoDBConstants.build(bootArgs);
         }
@@ -121,9 +118,81 @@ public class DataAccessor {
             // データ復元
             loadOperationLog(-1L);
         }
-        
     }
 
+    /**
+     * バックアッププロセス用のコンストラクタ.<br>
+     *
+     * 
+     */
+    public DataAccessor(String[] bootArgs, boolean backUpProccess) throws Exception {
+
+        this.bootArgs = bootArgs;
+
+        File objFile = new File(FemtoDBConstants.TRANSACTION_LOG + ".obj");
+        if (objFile.exists()) {
+            StoreTableManagerFolder storeTableManagerFolder = null;
+            FileInputStream inFile = null;
+            ObjectInputStream inObject = null;
+            try {
+                inFile = new FileInputStream(objFile); 
+                inObject = new ObjectInputStream(inFile);
+
+                // 直近で作成したobjファイルを読み込み
+                storeTableManagerFolder = (StoreTableManagerFolder)inObject.readObject();
+                inObject.close();
+                inFile.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+                try {
+                    storeTableManagerFolder = null;
+                    if (inObject == null) inObject.close();
+                    if (inFile == null) inFile.close();
+                } catch (Exception e2) {}
+
+                try {
+                    File oldObjFile = new File(FemtoDBConstants.TRANSACTION_LOG + ".obj.old");
+                    if (oldObjFile.exists()) {
+                        inFile = new FileInputStream(oldObjFile);
+                        inObject = new ObjectInputStream(inFile);
+                        storeTableManagerFolder = (StoreTableManagerFolder)inObject.readObject();
+                        inObject.close();
+                        inFile.close();
+                    }
+                } catch (Exception e2) {
+                    storeTableManagerFolder = null;
+                }
+            }
+            
+            if (storeTableManagerFolder != null) {
+                transactionNoManager.initTransactionNoManager(storeTableManagerFolder.getTransactionNoObj(), storeTableManagerFolder.getTransactionStatusMapObj());
+    
+                this.tableManager = storeTableManagerFolder.getTableManager();
+                List<TableInfo> list = this.tableManager.getTableInfoList();
+
+                // データ復元
+                loadOperationLog(storeTableManagerFolder.getStoredLogNo());
+                if (list != null && list.size() > 0) {
+                    for (TableInfo table : list) {
+                        this.createAllDataIndex(table.tableName);
+                    }
+                }
+            } else {
+                // 通常の復元シーケンス
+                transactionNoManager.initTransactionNoManager();
+                TableManager.initOid();
+                this.tableManager = new TableManager();
+                // データ復元
+                loadOperationLog(-1L);
+            }
+        } else {
+            transactionNoManager.initTransactionNoManager();
+            TableManager.initOid();
+            this.tableManager = new TableManager();
+            // データ復元
+            loadOperationLog(-1L);
+        }
+    }
 
     // 操作ログよりデータを復元
     private void loadOperationLog(long readLogNo) throws Exception {
@@ -321,7 +390,17 @@ public class DataAccessor {
 
     public boolean addIndexColumn(TableInfo tableInfo) {
         TableAccessor tableAccessor = new TableAccessor(this.tableManager, queryOptimizer, transactionNoManager);
-        tableAccessor.addIndexColumn(tableInfo);
+        boolean ret = tableAccessor.addIndexColumn(tableInfo);
+
+        if (ret) {
+            logWriteLock.lock();
+            try {
+                tansactionLogWrite(Integer.valueOf(90), tableInfo);
+            } finally {
+                logWriteLock.unlock();
+                return ret;
+            }
+        }
 
         return true;
     }
@@ -477,6 +556,7 @@ public class DataAccessor {
     public boolean storeTableObject() {
         logWriteLock.lock();
         try {
+            System.out.println(this.dataOperationLogManager.getLogNo());
             StoreTableManagerFolder folder = new StoreTableManagerFolder(this.dataOperationLogManager.getLogNo());
 
             folder.setTableManager(this.tableManager);
@@ -536,21 +616,21 @@ public class DataAccessor {
                             Thread.sleep(10000);
                         }
 
-                        Thread.sleep(7000);
+                        Thread.sleep(150000);
                         for (TableInfo info : list) {
                             this.baseInstance.cleanDeletedData(info.tableName);
                             Thread.sleep(3000);
                         }
-                        Thread.sleep(7000);
+                        Thread.sleep(300000);
 
                         // TODO:自動バックアップは一時的に停止
-                        System.out.println("start");
+                        /*System.out.println("start");
                         long objStoreStart = System.nanoTime();
                         DataAccessor dataAccessor = new DataAccessor(bootArgs, true);
                         if (!dataAccessor.storeTableObject()) System.out.println("error");
                         long objStoreEnd = System.nanoTime();
                         System.out.println(" Stored time" + ((objStoreEnd - objStoreStart) / 1000 /1000) + "ms");
-                        System.out.println("end");
+                        System.out.println("end");*/
                     } catch (Throwable e) {
                         e.printStackTrace();
                     }

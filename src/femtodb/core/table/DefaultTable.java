@@ -261,7 +261,7 @@ public class DefaultTable extends AbstractTable implements ITable, Serializable 
                 }
                 if (tableData.newTransactionNo.isCommited()) {
                     index.putData(tableData.newTransactionNo, tableData.oid, tableData);
-                } else if (tableData.oldTransactionNo.isCommited()) {
+                } else if (tableData.oldTransactionNo != null && tableData.oldTransactionNo.isCommited()) {
                     index.putData(tableData.oldTransactionNo, tableData.oid, tableData);
                 }
 

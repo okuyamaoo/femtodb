@@ -140,6 +140,7 @@ public class SelectTableAccessor {
         }
 
         if (normalWhereParameter != null) {
+
             if (transactionNo.modTableFolder != null && transactionNo.modTableFolder.containsKey(tableName)) {
 
                 normalWhereExecutor.execute(iterator, transactionNo, allData);
@@ -150,6 +151,7 @@ public class SelectTableAccessor {
 
                 normalWhereExecutor.execute(iterator, transactionNo, allData);
             } else if (selectParameter.existIndexWhereParameter()) {
+
                 while (iterator.hasNext()) {
         
                     iterator.next();
@@ -158,17 +160,19 @@ public class SelectTableAccessor {
                     if (tableDataTransfer != null) {
                         allData.add(tableDataTransfer);
                     }
-
-                    if (!queryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
-                        // データを収集中にデータ追加が動きIndexが変わってしまっている。
-                        allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
-    
-                        iterator = queryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
-                        normalWhereExecutor.execute(iterator, transactionNo, allData);
-                    }
                 }
+
+                if (!queryOptimizer.checkModifyedTable(tableName, System.nanoTime())) { 
+                    // データを収集中にデータ追加が動きIndexが変わってしまっている。
+                    allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
+
+                    iterator = queryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
+                    normalWhereExecutor.execute(iterator, transactionNo, allData);
+                }
+
             }
         } else {
+
             while (iterator.hasNext()) {
         
                 iterator.next();
@@ -182,7 +186,6 @@ public class SelectTableAccessor {
         }
 
         while ((normalWhereParameter = selectParameter.nextNormalWhereParameter()) != null) {
-
 
             normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
 
