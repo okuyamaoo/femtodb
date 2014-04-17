@@ -1,5 +1,6 @@
 package femtodb.core.table;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -12,11 +13,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Takahiro Iwase
  * @license Apache License 2.0 
  */
-public class TableManager {
+public class TableManager implements Serializable {
 
     public static AtomicLong globalOid = null;
 
-    public Object tableCreateObj = new Object();
+    public Integer tableCreateObj = new Integer(1);
 
     public Map<String, TableInfo> tableInfoMap = null;
     public Map<String, ITable> tableDataMap = null;

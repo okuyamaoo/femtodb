@@ -22,6 +22,8 @@ public class SelectParameter {
 
     private NormalWhereParameter indexWhereParameter = null;
 
+    private String toStringCache =null;
+
     public SelectParameter() {
     }
 
@@ -202,19 +204,23 @@ public class SelectParameter {
     }
 
     public String toString() {
-        StringBuilder str = new StringBuilder();
-        str.append("TableName=[");
-        str.append(tableName);
-        str.append("] indexWhereParameter=[");
-        str.append(indexWhereParameter);
-        str.append("] normalWhereParameterList=[");
-        str.append(normalWhereParameterList);
-        str.append("] sortParameterList=[");
-        str.append(sortParameterList);
-        str.append("] limit=[");
-        str.append(limit);
-        str.append("] offset=[");
-        str.append(offset);
-        return str.toString();
+        if (toStringCache == null) {
+            StringBuilder str = new StringBuilder();
+            str.append("TableName=[");
+            str.append(tableName);
+            str.append("] indexWhereParameter=[");
+            str.append(indexWhereParameter);
+            str.append("] normalWhereParameterList=[");
+            str.append(normalWhereParameterList);
+            str.append("] sortParameterList=[");
+            str.append(sortParameterList);
+            str.append("] limit=[");
+            str.append(limit);
+            str.append("] offset=[");
+            str.append(offset);
+            toStringCache = str.toString();
+        }
+        return toStringCache;
+        
     }
 }

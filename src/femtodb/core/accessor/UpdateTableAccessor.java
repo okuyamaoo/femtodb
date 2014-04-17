@@ -20,9 +20,11 @@ public class UpdateTableAccessor {
 
 
     TableManager tableManager = null;
+    QueryOptimizer queryOptimizer = null;
 
-    public UpdateTableAccessor(TableManager tableManager) {
+    public UpdateTableAccessor(TableManager tableManager, QueryOptimizer queryOptimizer) {
         this.tableManager = tableManager;
+        this.queryOptimizer = queryOptimizer;
     }
 
     public int update(UpdateParameter updateParameter, TransactionNo transactionNo) throws DuplicateUpdateException, Exception {
@@ -91,10 +93,10 @@ public class UpdateTableAccessor {
             List<Object[]> allData = new ArrayList<Object[]>(table.getRecodeSize());
 
             // Optimizerにスレッド制御を実施させる
-            Object syncObj = QueryOptimizer.getParallelsSyncObject(transactionNo, (SelectParameter)updateParameter, th);
+            Object syncObj = queryOptimizer.getParallelsSyncObject(transactionNo, (SelectParameter)updateParameter, th);
 
             // 条件に対してオプティマイザがIndex条件などを加味し適応済みのIteratorを返す
-            TableIterator iterator = QueryOptimizer.execute(transactionNo, tableManager, tableName, updateParameter, table);
+            TableIterator iterator = queryOptimizer.execute(transactionNo, tableManager, tableName, updateParameter, table);
 
             synchronized(syncObj) {
                 NormalWhereParameter normalWhereParameter = updateParameter.nextNormalWhereParameter();
@@ -174,7 +176,7 @@ public class UpdateTableAccessor {
         } catch (Exception e) {
             throw e;
         } finally {
-            QueryOptimizer.removeThreadGroupData(th);
+            queryOptimizer.removeThreadGroupData(th);
         }
     }
 

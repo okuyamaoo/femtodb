@@ -1,5 +1,6 @@
 package femtodb.core.util;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -20,7 +21,7 @@ import femtodb.core.accessor.*;
  * @author Takahiro Iwase
  * @license Apache License 2.0 
  */
-public class BaseMap {
+public class BaseMap implements Serializable {
     
     private Map mainData = new HashMap(1000000);
     public List dataList = new ArrayList(1000000);
@@ -107,5 +108,10 @@ public class BaseMap {
 
     public int size() {
         return lastSize;
+    }
+    
+    public String toString() {
+        System.out.println(mainData);
+        return "";
     }
 }

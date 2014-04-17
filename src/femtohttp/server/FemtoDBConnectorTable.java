@@ -141,6 +141,7 @@ public class FemtoDBConnectorTable  extends HttpServlet {
             }
             result = FemtoHttpServer.dataAccessor.createTable(tableInfo);
         } catch (Exception ee) {
+
             response.setStatus(500);
             response.setContentType("text/html; charset=utf-8");
             response.getWriter().println("errormessage:\"An unknown error has occurred\"");
@@ -159,6 +160,94 @@ public class FemtoDBConnectorTable  extends HttpServlet {
             response.getWriter().println("\"Table already exists\"");
         }
     }
+
+    /** 
+     * 既存テーブルにインデックスカラムを追加.<br>
+     * パラメータ：テーブル名<br>
+     * 返却値はJSONフォーマット<br>
+     * 本リクエストはパラメータとして以下を必要とする.<br>
+     * "table" : テーブル名を指定する<br>
+     * "indexcoolumns" : 検索インデックスを作成するカラム名を指定する。複数指定する際は","区切りで指定する<br>
+     * インデックスの種類には完全一致の条件時に利用されるインデックス"equal"とテキスト検索時に利用される"text"が存在する<br>
+     * "equal"はデータ取得時の条件" = "で利用される。<br>
+     * "text"はデータ取得時の条件" text "で利用される。<br>
+     * これらのインデックス種類を指定する際はカラ名の後ろに":equal"もしくは":text"と指定する<br>
+     * 指定を省略した際は":equal"となる<br>
+     *
+     * @param request
+     * @param response 
+     * @throws ServletException
+     * @throws IOException
+     */
+    protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        SystemLog.queryLog(request.getParameterMap());
+
+        Map resultMap = new LinkedHashMap();
+        
+        String tableName = request.getParameter("table");
+        if (tableName == null || tableName.trim().equals("")) {
+
+            response.setStatus(400);
+            response.setContentType("text/html; charset=utf-8");
+            response.getWriter().println("errormessage:\"Parameter 'table' not found\"");
+            return;
+        }
+
+
+        String indexColumns = request.getParameter("indexcolumns");
+        String[] indexColumnList = null;
+        if (indexColumns != null && !indexColumns.trim().equals("")) {
+            indexColumnList = indexColumns.split(",");
+        }
+        TableInfo tableInfo = new TableInfo(tableName.trim().toLowerCase());
+        try {
+            if (indexColumnList != null) {
+                for (int i = 0; i < indexColumnList.length; i++) {
+                    if (indexColumnList[i].indexOf(":equal") != -1) {
+                        tableInfo.addTableColumnInfo(indexColumnList[i].trim().toLowerCase().replaceAll(":equal",""), new ColumnTypeVarchar());
+                    } else if (indexColumnList[i].indexOf(":text") != -1) {
+                        tableInfo.addTableColumnInfo(indexColumnList[i].trim().toLowerCase().replaceAll(":text",""), new ColumnTypeText());
+                    } else if (indexColumnList[i].indexOf(":") == -1) {
+                        tableInfo.addTableColumnInfo(indexColumnList[i].trim().toLowerCase(), new ColumnTypeVarchar());
+                    } else {
+    
+                        response.setStatus(400);
+                        response.setContentType("text/html; charset=utf-8");
+                        response.getWriter().println("errormessage:\"Parameter 'indexcolumns' Format violation\"");
+                        return;
+                    }
+                }
+            }
+
+            if (!FemtoHttpServer.dataAccessor.addIndexColumn(tableInfo)) {
+                
+            }
+    
+            if (!FemtoHttpServer.dataAccessor.createAllDataIndex(tableName)) {
+                resultMap.put("result", "false");
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.setContentType("application/json; charset=utf-8");
+                String jsonStr = JSON.encode(resultMap);
+                response.setContentLength(jsonStr.getBytes().length);
+                response.getWriter().println(jsonStr);
+            } else {
+                resultMap.put("result", "true");
+                resultMap.put("tablename", tableName);
+    
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.setContentType("application/json; charset=utf-8");
+                String jsonStr = JSON.encode(resultMap);
+                response.setContentLength(jsonStr.getBytes().length);
+                response.getWriter().println(jsonStr);
+            }
+        } catch (Exception e) {
+            response.setStatus(500);
+            response.setContentType("text/html; charset=utf-8");
+            response.getWriter().println("errormessage:\"An unknown error has occurred\"");
+            return;
+        }
+    }
+
 
     /** 
      * テーブルを削除.<br>
@@ -185,6 +274,9 @@ public class FemtoDBConnectorTable  extends HttpServlet {
             response.getWriter().println("errormessage:\"Parameter 'table' not found\"");
             return;
         }
+
+        // キャッシュ領域に更新を通知
+        FemtoHttpServer.resultCache.updateTableAccess(tableName);
 
         TableInfo tableInfo = FemtoHttpServer.dataAccessor.removeTable(tableName);
 

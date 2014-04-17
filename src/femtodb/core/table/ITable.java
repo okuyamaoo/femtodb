@@ -2,7 +2,10 @@ package femtodb.core.table;
 
 import java.util.*;
 
+import femtodb.core.*;
+import femtodb.core.table.type.*;
 import femtodb.core.table.data.*;
+import femtodb.core.accessor.*;
 import femtodb.core.accessor.parameter.*;
 import femtodb.core.table.transaction.*;
 import femtodb.core.table.index.*;
@@ -26,6 +29,8 @@ public interface ITable {
 
     public List<String> getColumnNameList();
 
+    public TableDataTransfer getTableData4UniqueKey(TransactionNo transactionNo , String uniqueKey);
+
     public boolean addTableData(TableData data);
 
     public boolean removeTmpData(long oid);
@@ -38,7 +43,13 @@ public interface ITable {
 
     public TableIterator getTableDataIterator(TransactionNo tn, SelectParameter selectParameter);
 
-    public boolean rebuildIndex();
+    public boolean addIndexColumn(String columnName, IColumnType indexType);
+
+    public boolean addIndexColumnInfo(String columnName, IColumnType indexType) throws TableInfoException;
+
+    public boolean rebuildIndex(QueryOptimizer queryOptimizer);
+
+    public boolean createAllDataIndex(TransactionNo transactionNo);
 
     public boolean cleanDeletedData();
 

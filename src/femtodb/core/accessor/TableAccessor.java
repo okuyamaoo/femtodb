@@ -2,7 +2,10 @@ package femtodb.core.accessor;
 
 import java.util.*;
 
+import femtodb.core.accessor.*;
 import femtodb.core.table.*;
+import femtodb.core.table.type.*;
+import femtodb.core.table.transaction.*;
 
 
 /** 
@@ -14,12 +17,16 @@ import femtodb.core.table.*;
 public class TableAccessor {
 
     private TableManager tableManager = null;
+    private QueryOptimizer queryOptimizer = null;
+    private TransactionNoManager transactionNoManager = null;
 
     public static int TABLE_CREATE_EXIST_ERROR = 2;
 
 
-    public TableAccessor(TableManager tableManager) {
+    public TableAccessor(TableManager tableManager, QueryOptimizer queryOptimizer, TransactionNoManager transactionNoManager) {
         this.tableManager = tableManager;
+        this.queryOptimizer = queryOptimizer;
+        this.transactionNoManager = transactionNoManager;
     }
 
     public TableInfo getTableInfo(String tableName) {
@@ -40,10 +47,65 @@ public class TableAccessor {
         }
     }
 
+    public boolean addIndexColumn(TableInfo info) {
+        synchronized(this.tableManager.tableCreateObj) {
+            try {
+                if (!this.tableManager.existTable(info.tableName)) {
+                    // テーブルが存在しない
+                    return false;
+                } else {
+                    List<Object[]> addIndexColumnList = new ArrayList();
+    
+                    ITable table = this.tableManager.getTableData(info.tableName);
+                    String[] columnNames = info.getIndexColumnNameList();
+                    for (String columnName : columnNames) {
+    
+                        boolean existColumn =false;
+                        String[] nowIndexColumns = table.getIndexColumnNames();
+                        for (int idx = 0; idx < nowIndexColumns.length; idx++) {
+    
+                            if (nowIndexColumns[idx].equals(columnName)) {
+                                existColumn = true;
+                            }
+                        }
+                        if (existColumn == false) {
+    
+                            Object[] addInfo = new Object[2];
+                            addInfo[0] = columnName;
+                            addInfo[1] = info.getColumnType(columnName);
+                            table.addIndexColumn(columnName, info.getColumnType(columnName));
+                            addIndexColumnList.add(addInfo);
+                        }
+                    }
+                    this.createAllDataIndex(info.tableName);
+                    for (Object[] addInfo : addIndexColumnList) {
+                        table.addIndexColumnInfo((String)addInfo[0], (IColumnType)addInfo[1]);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        return true;
+    }
+
     public boolean rebuildIndex(String tableName) {
+        synchronized(this.tableManager.tableCreateObj) {
+ 
+            ITable table = this.tableManager.getTableData(tableName);
+            if (table == null) return false;
+            table.rebuildIndex(queryOptimizer);
+        }
+        return true;
+    }
+
+    public boolean createAllDataIndex(String tableName) {
+        TransactionNo tn = transactionNoManager.createAnonymousTransactionNo();
+
         ITable table = this.tableManager.getTableData(tableName);
         if (table == null) return false;
-        table.rebuildIndex();
+        table.createAllDataIndex(tn);
         return true;
     }
 

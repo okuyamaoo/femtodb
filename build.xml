@@ -4,7 +4,7 @@
 	<property name="project.title"  value="FemtoDB" />
 	<property name="src.dir"		value="src" />
 	<property name="build.dir"		value="classes" />
-	<property name="version"		value="0.0.2" />
+	<property name="version"		value="0.0.3" />
 	<property name="lib.dir"	    value="lib"/>
 	<property name="bin.dir"		value="bin" />
 	<property name="javadoc.dir"	value="javadoc"/>
@@ -60,7 +60,7 @@
 
 	<!-- jar make task  -->
 	<target name="jar" depends="compile">
-		<jar compress="yes" jarfile="femtodb-${version}.jar" basedir="${build.dir}" includes="**/*.class" />
+		<jar compress="yes" jarfile="femtodb-${version}.jar" basedir="${build.dir}" includes="**/*.class" excludes="test/*.class"/>
 		<copy todir="${bin.dir}">
 			<fileset dir="./" includes="femtodb*.jar" />
 		</copy>

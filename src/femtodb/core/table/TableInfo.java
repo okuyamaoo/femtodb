@@ -1,7 +1,7 @@
 package femtodb.core.table;
 
+import java.io.*;
 import java.util.*;
-
 
 import femtodb.core.table.type.*;
 import femtodb.core.*;
@@ -12,7 +12,7 @@ import femtodb.core.*;
  * @author Takahiro Iwase
  * @license Apache License 2.0 
  */
-public class TableInfo {
+public class TableInfo implements Serializable {
 
     public String tableName = null;
     public Map<String, IColumnType> infomationMap = new LinkedHashMap<String, IColumnType>();

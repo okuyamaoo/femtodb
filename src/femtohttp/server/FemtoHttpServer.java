@@ -5,6 +5,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.servlet.ServletHandler;
 
+import femtohttp.util.*;
 import femtodb.core.*;
 import femtodb.core.table.*;
 import femtodb.core.table.transaction.*;
@@ -114,9 +115,17 @@ import femtodb.core.accessor.parameter.*;
  * @license Apache License 2.0 
  */
 public class FemtoHttpServer {
-    
+    // FemtoDBのメインインスタンス
     static DataAccessor dataAccessor = null;
-    
+
+    static ResultCache resultCache  = null;
+
+    // 全ての処理を受け付けるHTTPサーバのインスタンス
+    private Server server = null;
+    // JSONPでの参照系のみ受け付けるHTTPサーバのインスタンス
+    private Server jsonpServer = null;
+
+
     public static void main(String[] args) {
         try {
             // 起動引数をコンパイル
@@ -131,11 +140,15 @@ public class FemtoHttpServer {
     private void startServer(String[] args) throws Exception {
 
         // DataAccessorを初期化
-        FemtoHttpServer.dataAccessor = new DataAccessor();
+        DataAccessor femtoCore = new DataAccessor();
+        FemtoHttpServer.dataAccessor = femtoCore;
+        if (FemtoDBConstants.USE_RESULT_CACHE) {
+            FemtoHttpServer.resultCache = new ResultCache(FemtoDBConstants.MAX_RESULT_CACHE_LIMIT);
+        }
 
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setMaxThreads(FemtoDBConstants.HTTP_SERVER_MAXTHREADS);
-        Server server = new Server(threadPool);
+        this.server = new Server(threadPool);
 
         ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
@@ -148,9 +161,44 @@ public class FemtoHttpServer {
         http.setPort(FemtoDBConstants.HTTP_SERVER_PORT);
         http.setIdleTimeout(FemtoDBConstants.HTTP_SERVER_IDLETIMEOUT);
         server.addConnector(http);
-        server.start();
+        server.start(); // メインのサーバ起動
+        executeJsonpServer(); // JSONP専用のサーバの起動を移譲
         server.join();
     }
 
+    private void executeJsonpServer() throws Exception {
+        // JSONP用のインターフェースの起動有無
+        if (FemtoDBConstants.START_JSONP_SERVER) {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            threadPool.setMaxThreads(FemtoDBConstants.HTTP_JSONP_SERVER_MAXTHREADS);
+            this.jsonpServer = new Server(threadPool);
+    
+            ServletHandler handler = new ServletHandler();
+            jsonpServer.setHandler(handler);
+            handler.addServletWithMapping(femtohttp.server.FemtoDBConnectorDataaccess.class, "/femtodb/searchdata");
+    
+            ServerConnector http = new ServerConnector(jsonpServer);
+            http.setPort(FemtoDBConstants.HTTP_JSONP_SERVER_PORT);
+            http.setIdleTimeout(FemtoDBConstants.HTTP_JSONP_SERVER_IDLETIMEOUT);
+            jsonpServer.addConnector(http);
+            jsonpServer.start(); // JSONPサーバ起動
+        } else {
+            // 起動なし
+        }
+    }
+
+    public static final Object putResultCache(SelectParameter key, Object value) {
+        if (FemtoHttpServer.resultCache != null) {
+            return FemtoHttpServer.resultCache.put(key, value);
+        }
+        return null;
+    }
+
+    public static final Object getResultCache(SelectParameter key) {
+        if (FemtoHttpServer.resultCache != null) {
+            return FemtoHttpServer.resultCache.get(key);
+        }
+        return null;
+    }
 
 }

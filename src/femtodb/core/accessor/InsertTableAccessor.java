@@ -15,9 +15,11 @@ public class InsertTableAccessor {
 
 
     public TableManager tableManager = null;
+    public QueryOptimizer queryOptimizer = null;
 
-    public InsertTableAccessor(TableManager tableManager) {
+    public InsertTableAccessor(TableManager tableManager, QueryOptimizer queryOptimizer) {
         this.tableManager = tableManager;
+        this.queryOptimizer = queryOptimizer;
     }
 
     public int insert(String tableName, TransactionNo transactionNo, TableDataTransfer tableDataTransfer) {

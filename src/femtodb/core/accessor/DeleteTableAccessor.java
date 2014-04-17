@@ -22,8 +22,12 @@ public class DeleteTableAccessor {
 
     TableManager tableManager = null;
 
-    public DeleteTableAccessor(TableManager tableManager) {
+    QueryOptimizer queryOptimizer = null;
+
+    public DeleteTableAccessor(TableManager tableManager, QueryOptimizer queryOptimizer) {
+    
         this.tableManager = tableManager;
+        this.queryOptimizer = queryOptimizer;
     }
 
     public int delete(DeleteParameter deleteParameter, TransactionNo transactionNo) throws DuplicateDeleteException, Exception {
@@ -88,9 +92,9 @@ public class DeleteTableAccessor {
             List<Object[]> allData = new ArrayList<Object[]>(table.getRecodeSize());
 
             // Optimizerにスレッド制御を実施させる
-            Object syncObj = QueryOptimizer.getParallelsSyncObject(transactionNo, (SelectParameter)deleteParameter, th);
+            Object syncObj = queryOptimizer.getParallelsSyncObject(transactionNo, (SelectParameter)deleteParameter, th);
             // 条件に対してオプティマイザがIndex条件などを加味し適応済みのIteratorを返す
-            TableIterator iterator = QueryOptimizer.execute(transactionNo, tableManager, tableName, deleteParameter, table);
+            TableIterator iterator = queryOptimizer.execute(transactionNo, tableManager, tableName, deleteParameter, table);
 
             synchronized(syncObj) {
                 NormalWhereParameter normalWhereParameter = deleteParameter.nextNormalWhereParameter();
@@ -168,7 +172,7 @@ public class DeleteTableAccessor {
         } catch (Exception e) {
             throw e;
         } finally {
-            QueryOptimizer.removeThreadGroupData(th);
+            queryOptimizer.removeThreadGroupData(th);
         }
     }
 

@@ -165,7 +165,7 @@ public class FemtoDataLoader {
                     // カラム名は先頭からcolumn1, column2, column3・・・といったように順に作成される
                     Map insertData = new LinkedHashMap();
                     for (int idx = 0; idx < data.length; idx++) {
-                        insertData.put("column"+(idx+1), data[idx]);
+                        insertData.put("column"+(idx+1), URLEncoder.encode(data[idx].replaceAll("\"", ""),"utf-8"));
                     }
                     int ret = insert(address, tableName, tno, port, insertData);
                     if (ret == -1) {
@@ -189,7 +189,7 @@ public class FemtoDataLoader {
                     Map insertData = new LinkedHashMap();
                     for (int idx = 0; idx < columnList.length; idx++) {
                         if (idx < data.length) {
-                            insertData.put(columnList[idx], data[idx]);
+                            insertData.put(columnList[idx], URLEncoder.encode(data[idx].replaceAll("\"", ""),"utf-8"));
                         }
                     }
                     int ret = insert(address, tableName, tno, port, insertData);
