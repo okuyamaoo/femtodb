@@ -163,11 +163,32 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
             // orderby
             settingOrderbyParameter(sp, orderbyStr);
 
-            // クエリ実行
-            long queryStartTime = System.nanoTime();
-            ResultStruct resultStruct = FemtoHttpServer.dataAccessor.selectTableData(sp, tansactionNo);
-            List<TableDataTransfer> resultList = resultStruct.getResultList();
-            long queryEndTime = System.nanoTime();
+            // キャッシュ参照
+            // シングルのトランザクション時のみ有効
+            ResultStruct resultStruct = null;
+            List<TableDataTransfer> resultList = null;
+            if (onceTransaction) {
+                // キャッシュ参照
+                resultStruct = (ResultStruct)FemtoHttpServer.getResultCache(sp);
+            }
+
+            // キャッシュなし
+            if (resultStruct == null) {
+                // クエリ実行
+                //long queryStartTime = System.nanoTime();
+                resultStruct = FemtoHttpServer.dataAccessor.selectTableData(sp, tansactionNo);
+                //long queryEndTime = System.nanoTime();
+                resultList = resultStruct.getResultList();
+
+                if (resultList.size() < 1024) {
+                    // 結果のリストが1000件を超える場合はキャッシュに入れない
+                    FemtoHttpServer.putResultCache(sp, resultStruct);
+                }
+            }
+
+            // 結果セット取り出し(キャッシュなしの場合は既に取り出している可能性があるためその場合はスキップ
+            if (resultList == null)
+                resultList = resultStruct.getResultList();
 
             // JSONデコードする前にTableDataTransferからカラムとデータだけ抜き出してそれをMapにしてJSONデコード
             response.setStatus(HttpServletResponse.SC_OK);
@@ -315,6 +336,9 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
                 return;
             }
 
+            // キャッシュ領域に更新を通知
+            FemtoHttpServer.resultCache.updateTableAccess(tableName);
+
             // TransactionNo指定なしの場合ここでCommit
             if (onceTransaction) {
                 FemtoHttpServer.dataAccessor.commitTransaction(tansactionNo);
@@ -423,6 +447,9 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
             long queryStartTime = System.nanoTime();
             int resultCount = FemtoHttpServer.dataAccessor.deleteTableData(dp, tansactionNo);
             long queryEndTime = System.nanoTime();
+
+            // キャッシュ領域に更新を通知
+            FemtoHttpServer.resultCache.updateTableAccess(tableName);
 
             // TransactionNo指定なしの場合ここでCommit
             if (onceTransaction) {
@@ -557,6 +584,9 @@ public class FemtoDBConnectorDataaccess extends AbstractFemtoDBServlet {
             long queryStartTime = System.nanoTime();
             int resultCount = FemtoHttpServer.dataAccessor.updateTableData(up, tansactionNo);
             long queryEndTime = System.nanoTime();
+
+            // キャッシュ領域に更新を通知
+            FemtoHttpServer.resultCache.updateTableAccess(tableName);
 
             // TransactionNo指定なしの場合ここでCommit
             if (onceTransaction) {

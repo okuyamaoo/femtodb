@@ -275,6 +275,9 @@ public class FemtoDBConnectorTable  extends HttpServlet {
             return;
         }
 
+        // キャッシュ領域に更新を通知
+        FemtoHttpServer.resultCache.updateTableAccess(tableName);
+
         TableInfo tableInfo = FemtoHttpServer.dataAccessor.removeTable(tableName);
 
         if (tableInfo == null) {
