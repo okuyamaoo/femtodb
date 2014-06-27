@@ -94,6 +94,18 @@ public class TableData implements Serializable {
 
 
     public final TableDataTransfer getTableDataTransfer(TransactionNo targetTn) {
+        // 匿名セッション判定
+        if (targetTn.getTransactionNo() == Long.MAX_VALUE) {
+            // 匿名セッションである
+            TableDataTransfer retData = newData;
+            if (retData.getTransactionNo().isCommited() == true) {
+                if (retData.isDeletedData()) {
+                    return null;
+                }
+                return retData;
+            }
+        }
+
         readLock.lock();
         try {
 

@@ -114,6 +114,12 @@ public class DefaultTable extends AbstractTable implements ITable, Serializable 
         return true;
     }
 
+    public TableData getTableData(long oid) {
+        TableData tableData = this.dataMap.remove(oid);
+        
+        return tableData;
+    }
+
     private void removeUniqueKeyData(TableData tableData) {
         if (tableData !=null) {
             uniqueMapWriteLock.lock();

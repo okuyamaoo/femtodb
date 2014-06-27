@@ -35,6 +35,8 @@ public interface ITable {
 
     public boolean removeTmpData(long oid);
 
+    public TableData getTableData(long oid);
+
     public boolean modTableData(TableData data);
     
     public boolean deleteTableData(TableData data);

@@ -125,7 +125,7 @@ public class SelectTableAccessor {
         if (table == null) return new ArrayList();
 
         List<TableDataTransfer> allData = new ArrayList<TableDataTransfer>(table.getRecodeSize());
-
+        long start1 = System.nanoTime();
         // 条件に対してオプティマイザがIndex条件などを加味し適応済みのIteratorを返す
         TableIterator iterator = queryOptimizer.execute(transactionNo, tableManager, tableName, selectParameter, table);
 
@@ -138,7 +138,10 @@ public class SelectTableAccessor {
                 throw e;
             }
         }
+        long end1 = System.nanoTime();
+        SystemLog.println(" select inner section1=" + (end1 - start1));
 
+        long start2 = System.nanoTime();
         if (normalWhereParameter != null) {
 
             if (transactionNo.modTableFolder != null && transactionNo.modTableFolder.containsKey(tableName)) {
@@ -171,6 +174,9 @@ public class SelectTableAccessor {
                 }
 
             }
+            long end2 = System.nanoTime();
+            SystemLog.println(" select inner section2-1=" + (end2 - start2));
+
         } else {
 
             while (iterator.hasNext()) {
@@ -183,8 +189,12 @@ public class SelectTableAccessor {
                     allData.add(tableDataTransfer);
                 }
             }
+            long end2 = System.nanoTime();
+            SystemLog.println(" select inner section2-2=" + (end2 - start2));
+
         }
 
+        long start3 = System.nanoTime();
         while ((normalWhereParameter = selectParameter.nextNormalWhereParameter()) != null) {
 
             normalWhereExecutor = new NormalWhereExecutor(normalWhereParameter, tableManager.getTableInfo(tableName));
@@ -204,6 +214,9 @@ public class SelectTableAccessor {
                 allData = tmpAllData;
            }
         }
+        long end3 = System.nanoTime();
+        SystemLog.println(" select inner section3=" + (end3 - start3));
+
         return allData;
     }
 
@@ -221,12 +234,12 @@ public class SelectTableAccessor {
                 int resultListSize = resultList.size();
 
                 if (resultListSize > 1000) {
-
-                    int splitSize = 400;
+                    long start1 = System.nanoTime();
+                    int splitSize = 1000;
                     if (resultListSize < 5000) {
-                        splitSize = 10;
+                        splitSize = 1000;
                     } else if (resultListSize < 10000) {
-                        splitSize = 16;
+                        splitSize = 1000;
                     }
 
                     int limitOffsetSettingPattern = limitOffsetSettingPattern(selectParameter);
@@ -239,9 +252,9 @@ public class SelectTableAccessor {
 
                     TreeMap preSortMap = new TreeMap();
 
-                    List tailList = new ArrayList(1000);
-                    List nullDataList = new ArrayList(1000);
-                    long start1 = System.nanoTime();
+                    List tailList = new ArrayList(10000);
+                    List nullDataList = new ArrayList(10000);
+
                     for (int i = 0; i < preSortListSize; i++) {
                         String colVar = resultList.get(samplePointBase*i).getColumnData(firstSortParameter.columnName);
                         if (colVar != null) {
@@ -253,23 +266,83 @@ public class SelectTableAccessor {
                         }
                     }
 
-                    //long end1 = System.nanoTime();
-                    //SystemLog.println("time1=" + (end1 - start1) + " preSortMapSIze=" + preSortMap.size());
-                    //long start2 = System.nanoTime();
+                    List sampleKeyList = new ArrayList(100);
+                    // PreSort用のサンプリング後の結果MapからサンプリングKeyを取り出して配列化
+                    for (Iterator ite = preSortMap.entrySet().iterator(); ite.hasNext();) {
+                        Map.Entry entry = (Map.Entry)ite.next();
+                        sampleKeyList.add(entry.getKey());
+                    }
+                    int midPoint = sampleKeyList.size() / 2;
+                    InnerComp innerComp = null;
+                    if (firstSortParameter.numberSort) {
+                        // Number
+                        innerComp = new InnerComp(2, sampleKeyList.get(midPoint));
+                    } else {
+                        // Character
+                        innerComp = new InnerComp(1, sampleKeyList.get(midPoint));
+                    }
+
+
+                   
+                    long end1 = System.nanoTime();
+                    SystemLog.println("Sort section1 time=" + (end1 - start1) + " preSortMapSIze=" + preSortMap.size());
+                    long start2 = System.nanoTime();
+
+                    int firstHalfCnt = 0;
+                    int secondHalfCnt = 0;
+                    int entryRead = -1;
+                    List headList = new ArrayList();
+
                     for (TableDataTransfer tableDataTransfer:resultList) {
                         String colVar = tableDataTransfer.getColumnData(firstSortParameter.columnName);
 
                         if (colVar != null) {
-
+                            int innerCompRet = 0;
+                            boolean readFlg = false;
                             Map.Entry preSortGroupEntry = null;
                             if (firstSortParameter.numberSort) {
 
-                                preSortGroupEntry = preSortMap.ceilingEntry(new Double(colVar));
+                                Double colVarDouble = new Double(colVar);
+                                innerCompRet = innerComp.compareTo(colVarDouble);
+                                
+                                if (innerCompRet > 0) {
+                                    firstHalfCnt++;
+                                    if (entryRead == 1 || entryRead == -1) {
+                                        readFlg = true;
+                                    }
+                                } else if (innerCompRet < 0 || innerCompRet == 0) {
+                                    secondHalfCnt++;
+                                    if (entryRead == 2 || entryRead == -1) {
+                                        readFlg = true;
+                                    }
+                                }
+
+                                if (readFlg) preSortGroupEntry = preSortMap.ceilingEntry(colVarDouble);
                             } else {
 
-                                preSortGroupEntry = preSortMap.ceilingEntry(colVar);
+                                innerCompRet = innerComp.compareTo(colVar);
+                                if (innerCompRet > 0) {
+                                    firstHalfCnt++;
+                                    if (entryRead == 1 || entryRead == -1) {
+                                        readFlg = true;
+                                    }
+                                } else if (innerCompRet < 0 || innerCompRet == 0) {
+                                    secondHalfCnt++;
+                                    if (entryRead == 2 || entryRead == -1) {
+                                        readFlg = true;
+                                    }
+                                }
+                                
+                                if (readFlg) preSortGroupEntry = preSortMap.ceilingEntry(colVar);
                             }
 
+                            if (firstSortParameter.type == 1) {
+
+                                // asc
+                                if (limitOffsetIndexs[1] < firstHalfCnt) {
+                                    entryRead = 1; // 前半は全て読み込む指定
+                                }
+                            }
                             if (preSortGroupEntry != null) {
 
                                 List preSortGroup = (List)preSortGroupEntry.getValue();
@@ -281,10 +354,10 @@ public class SelectTableAccessor {
                             nullDataList.add(tableDataTransfer);
                         }
                     }
-                    //long end2 = System.nanoTime();
-                    //SystemLog.println("time2=" + (end2 - start2));
+                    long end2 = System.nanoTime();
+                    SystemLog.println("Sort section2 time=" + (end2 - start2));
 
-                    //long start3 = System.nanoTime();
+                    long start3 = System.nanoTime();
 
                     resultList = new ArrayList(resultListSize);
                     int totalSortTargetCnt = 0;
@@ -297,12 +370,17 @@ public class SelectTableAccessor {
                             Map.Entry entry = (Map.Entry)ite.next();
 
                             List preSortGroup = (List)entry.getValue();
+                            
+                            int lastTotalSortTargetCnt = totalSortTargetCnt; // 1世代前までの合計数
                             totalSortTargetCnt = totalSortTargetCnt + preSortGroup.size();
 
+
                             if (limitOffsetSettingPattern != -1 && totalSortTargetCnt > limitOffsetIndexs[0]) {
-                                if (limitOffsetAssist == true && totalSortTargetCnt > (limitOffsetIndexs[0] + limitOffsetIndexs[1])) {
+                                
+                                if (limitOffsetAssist == true && (totalSortTargetCnt > limitOffsetIndexs[1] && lastTotalSortTargetCnt >  limitOffsetIndexs[0])) {
                                     limitOffsetAssist = true;
                                 } else {
+
                                     Collections.sort(preSortGroup, dataSortComparator);
                                     limitOffsetAssist = true;
                                 }
@@ -312,6 +390,7 @@ public class SelectTableAccessor {
                                         Collections.sort(preSortGroup, dataSortComparator);
                                     }
                                 } else { 
+
                                     Collections.sort(preSortGroup, dataSortComparator);
                                 }
                             }
@@ -319,11 +398,15 @@ public class SelectTableAccessor {
                             //SystemLog.println(preSortGroup.size() + "=" +  dataSortComparator);
                             resultList.addAll(preSortGroup);
                         }
-
-                        Collections.sort(tailList, dataSortComparator);
+                        if (limitOffsetAssist == false) {
+                            Collections.sort(tailList, dataSortComparator);
+                        }
                         resultList.addAll(tailList);
 
-                        Collections.sort(nullDataList, dataSortComparator);
+                        if (limitOffsetAssist == false) {
+
+                            Collections.sort(nullDataList, dataSortComparator);
+                        }
                         //SystemLog.println(dataSortComparator);
                         resultList.addAll(nullDataList);
                         //SystemLog.println("resultList.size()=" +resultList.size());
@@ -332,16 +415,19 @@ public class SelectTableAccessor {
                         // 振り分けが大きいものをまず投入
                         Collections.sort(tailList, dataSortComparator);
                         resultList.addAll(tailList);
+                        totalSortTargetCnt = resultList.size();
 
                         // PreSortを逆順に回す
                         for (Iterator ite = preSortMap.descendingMap().entrySet().iterator(); ite.hasNext();) {
                             Map.Entry entry = (Map.Entry)ite.next();
 
                             List preSortGroup = (List)entry.getValue();
+                            int lastTotalSortTargetCnt = totalSortTargetCnt; // 1世代前までの合計数
+
                             totalSortTargetCnt = totalSortTargetCnt + preSortGroup.size();
 
                             if (limitOffsetSettingPattern != -1 && totalSortTargetCnt > limitOffsetIndexs[0]) {
-                                if (limitOffsetAssist == true && totalSortTargetCnt > (limitOffsetIndexs[0] + limitOffsetIndexs[1])) {
+                                if (limitOffsetAssist == true && (totalSortTargetCnt > limitOffsetIndexs[1] && lastTotalSortTargetCnt >  limitOffsetIndexs[0])) {
                                     limitOffsetAssist = true;
                                 } else {
                                     Collections.sort(preSortGroup, dataSortComparator);
@@ -360,16 +446,19 @@ public class SelectTableAccessor {
                             //SystemLog.println(preSortGroup.size() + "=" +  dataSortComparator);
                             resultList.addAll(preSortGroup);
                         }
-
+                        resultList.addAll(headList);
                         // NULL用を入れる
                         Collections.sort(nullDataList, dataSortComparator);
                         resultList.addAll(nullDataList);
                     }
-                    //long end3 = System.nanoTime();
-                    //SystemLog.println("time3=" + (end3 - start3));
+                    long end3 = System.nanoTime();
+                    SystemLog.println("Sort section3 time=" + (end3 - start3));
 
                 } else {
+                    long start1 = System.nanoTime();
                     Collections.sort(resultList, dataSortComparator);
+                    long end1 = System.nanoTime();
+                    SystemLog.println("Sort section1 time=" + (end1 - start1));
                 }
 
                 
@@ -462,5 +551,34 @@ public class SelectTableAccessor {
             ret[1] = toIndex;
        }
         return ret;
+    }
+    
+    class InnerComp {
+        
+        Double baseDouble = null;
+        String baseStr = null;
+
+        int compMode = -1;
+
+        InnerComp(int mode, Object base) {
+            compMode = mode;
+            if (compMode == 1) {
+                // Character
+                baseStr = (String)base;
+            } else {
+                // Number
+                baseDouble = (Double)base;
+            }
+        }
+
+
+        public int compareTo(String target) {
+            return baseStr.compareTo(target);
+        }
+
+        public int compareTo(Double target) {
+            return baseDouble.compareTo(target);
+        }
+
     }
 }

@@ -488,12 +488,7 @@ public class DataAccessor {
     }
 
     public ResultStruct selectTableData(SelectParameter selectParameter, TransactionNo transactionNo) throws SelectException {
-        SelectTableAccessor selectTableAccessor = new SelectTableAccessor(this.tableManager, queryOptimizer);
-    
-        ResultStruct resultStruct = null;
-        resultStruct = selectTableAccessor.select(selectParameter, transactionNo);
-
-        return resultStruct;
+        return new SelectTableAccessor(this.tableManager, queryOptimizer).select(selectParameter, transactionNo);
     }
 
 
